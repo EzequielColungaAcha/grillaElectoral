@@ -233,6 +233,7 @@ export const typeDefs = gql`
     order: Int!
     address: String
     tableNumber: String
+    affiliate: Boolean
   }
 
   input AffiliateRecord {

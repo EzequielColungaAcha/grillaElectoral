@@ -445,7 +445,7 @@ export const resolvers = {
                       order: person.order,
                       address: person.address,
                       message: "",
-                      affiliate: false,
+                      affiliate: person.affiliate,
                       tableId: table._id,
                       tableNumber: person.tableNumber,
                     };

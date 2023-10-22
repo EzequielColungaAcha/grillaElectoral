@@ -5,7 +5,7 @@ import { UPDATE_AFFILIATE_PERSONS } from "../../../../graphql/persons";
 import { MdGroupAdd } from "react-icons/md";
 import Papa from "papaparse";
 
-export const AffiliateCSVButton = ({ datos }) => {
+export const AffiliateCSVButton = ({ datos, setAffiliateList }) => {
   const MySwal = withReactContent(Swal);
 
   const [setMultipleAffiliate] = useMutation(UPDATE_AFFILIATE_PERSONS);
@@ -18,7 +18,9 @@ export const AffiliateCSVButton = ({ datos }) => {
           <p>El .csv debe contener solo la cabecera dni</p>
           <p>Debajo, los datos, un dni de votante por fila</p>
           <br />
-          <p style={{ color: "red" }}>❗Máximo 200 afiliados por archivo</p>
+          <p className="text-red-600">
+            ❗Debe cargarse antes de la 'Carga Inicial de Datos'
+          </p>
         </div>
       ),
       showCancelButton: true,
@@ -45,18 +47,11 @@ export const AffiliateCSVButton = ({ datos }) => {
             encoding: "UTF-8",
             complete: function (results) {
               results.data.map((row) => {
-                row.dni.contains(".") && (row.dni = row.dni.replace(".", ""));
-                const affiliate = {
-                  dni: row.dni,
-                };
-                records.push(affiliate);
+                row.dni.includes(".") &&
+                  (row.dni = row.dni.replaceAll(".", ""));
+                records.push(row.dni);
               });
-              console.log(records);
-              setMultipleAffiliate({
-                variables: {
-                  data: records,
-                },
-              });
+              setAffiliateList(records);
             },
           });
         }
@@ -68,7 +63,7 @@ export const AffiliateCSVButton = ({ datos }) => {
     <button
       onClick={fileHandler}
       className="flex justify-center items-center rounded gap-2 py-3 px-5 bg-pink-500 hover:bg-pink-400 disabled:opacity-50 disabled:hover:bg-pink-500 disabled:hover:py-3 disabled:hover:px-5"
-      disabled={!datos}
+      disabled={datos}
     >
       <MdGroupAdd className="text-2xl" /> Añadir afiliados por Excel
     </button>

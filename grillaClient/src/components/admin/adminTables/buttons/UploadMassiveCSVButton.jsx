@@ -5,7 +5,7 @@ import { CREATE_MASSIVE_PERSONS } from "../../../../graphql/persons";
 import Papa from "papaparse";
 import { useEffect } from "react";
 
-export const UploadMassiveCSVButton = ({ refetch, datos }) => {
+export const UploadMassiveCSVButton = ({ refetch, datos, affiliateList }) => {
   const MySwal = withReactContent(Swal);
 
   const [addMassivePersons, { data, loading, error }] = useMutation(
@@ -26,8 +26,11 @@ export const UploadMassiveCSVButton = ({ refetch, datos }) => {
           <p>mesa, orden, apellido, nombre, dni y dir</p>
           <p>Debajo, los datos, un votante por fila</p>
           <br />
-          <p>
+          <p className="text-red-600">
             ❗Recomiendo usar Google Spreadsheets porque Excel no guarda las Ñ.
+          </p>
+          <p className="text-red-600">
+            ❗❗Si hay lista de afiliados, cargarla antes de esta opción
           </p>
         </div>
       ),
@@ -62,6 +65,7 @@ export const UploadMassiveCSVButton = ({ refetch, datos }) => {
                   order: parseInt(row.orden),
                   address: row.dir,
                   tableNumber: row.mesa,
+                  affiliate: affiliateList.includes(row.dni) ? true : false,
                 };
                 records.push(person);
               });

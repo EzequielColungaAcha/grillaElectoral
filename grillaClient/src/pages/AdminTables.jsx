@@ -5,6 +5,7 @@ import { useQuery, useSubscription, NetworkStatus } from "@apollo/client";
 import { tablesQuery } from "../graphql/admin";
 import { TABLE_ADDED, TABLE_DELETED } from "../graphql/subscription";
 import { UploadMassiveCSVButton } from "../components/admin/adminTables/buttons/UploadMassiveCSVButton";
+import { useState } from "react";
 
 export const AdminTables = () => {
   const { loading, error, data, refetch, networkStatus } = useQuery(
@@ -25,6 +26,8 @@ export const AdminTables = () => {
     },
   });
 
+  const [affiliateList, setAffiliateList] = useState([]);
+
   if (loading) return <span className="loader"></span>;
   if (error) return <p>Error</p>;
 
@@ -34,9 +37,13 @@ export const AdminTables = () => {
         <UploadMassiveCSVButton
           refetch={refetch}
           datos={Boolean(data.tables.length > 0)}
+          affiliateList={affiliateList}
         />
         <AddTable />
-        <AffiliateCSVButton datos={Boolean(data.tables.length > 0)} />
+        <AffiliateCSVButton
+          datos={Boolean(data.tables.length > 0)}
+          setAffiliateList={setAffiliateList}
+        />
       </div>
       <div>
         <AdminTableList tables={data.tables} />
