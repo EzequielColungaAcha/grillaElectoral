@@ -16,6 +16,7 @@
     "daisyui": "^2.51.5",
     "dotenv": "^16.3.1",
     "graphql": "^16.6.0",
+    "graphql-tag": "^2.12.6",
     "graphql-ws": "^5.12.1",
     "hamburger-react": "^2.5.0",
     "jwt-decode": "^3.1.2",

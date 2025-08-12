@@ -1,39 +1,39 @@
-import React from "react";
-import { HashRouter, BrowserRouter, Routes, Route } from "react-router-dom";
-import { Tables } from "./pages/Tables.jsx";
-import { TableDetails } from "./pages/TableDetails.jsx";
+import React from 'react';
+import { HashRouter, BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Tables } from './pages/Tables.jsx';
+import { TableDetails } from './pages/TableDetails.jsx';
 import {
   ApolloClient,
   ApolloProvider,
   InMemoryCache,
   split,
   HttpLink,
-} from "@apollo/client";
-import { getMainDefinition } from "@apollo/client/utilities";
-import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
-import { createClient } from "graphql-ws";
-import { Base } from "./pages/Base.jsx";
-import { Prensa } from "./pages/Prensa.jsx";
-import { AdminTableDetails } from "./pages/AdminTableDetails.jsx";
-import { Login } from "../src/components/login/Login.jsx";
-import { AuthProvider } from "./context/authContext.jsx";
-import { setContext } from "@apollo/client/link/context";
-import Navbar from "./components/navbar/Navbar.jsx";
-import { ProtectedRoute } from "./components/protectedRoute/ProtectedRoute.jsx";
-import { PRIVACY } from "./config.js";
-import { Home } from "./pages/Home.jsx";
-import { Register } from "./pages/Register.jsx";
-import { Logout } from "./pages/Logout.jsx";
-import { AdminTables } from "./pages/AdminTables.jsx";
-import { AdminFactions } from "./pages/AdminFactions.jsx";
-import { AdminUsers } from "./pages/AdminUsers.jsx";
-import { Export } from "./pages/Export.jsx";
-import { Estado } from "./pages/Estado.jsx";
-import { Escrutinio } from "./pages/Escrutinio.jsx";
+} from '@apollo/client';
+import { getMainDefinition } from '@apollo/client/utilities';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+import { createClient } from 'graphql-ws';
+import { Base } from './pages/Base.jsx';
+import { Prensa } from './pages/Prensa.jsx';
+import { AdminTableDetails } from './pages/AdminTableDetails.jsx';
+import { Login } from '../src/components/login/Login.jsx';
+import { AuthProvider } from './context/authContext.jsx';
+import { setContext } from '@apollo/client/link/context';
+import Navbar from './components/navbar/Navbar.jsx';
+import { ProtectedRoute } from './components/protectedRoute/ProtectedRoute.jsx';
+import { PRIVACY } from './config.js';
+import { Home } from './pages/Home.jsx';
+import { Register } from './pages/Register.jsx';
+import { Logout } from './pages/Logout.jsx';
+import { AdminTables } from './pages/AdminTables.jsx';
+import { AdminFactions } from './pages/AdminFactions.jsx';
+import { AdminUsers } from './pages/AdminUsers.jsx';
+import { Export } from './pages/Export.jsx';
+import { Estado } from './pages/Estado.jsx';
+import { Escrutinio } from './pages/Escrutinio.jsx';
 
 // const MONGODB_URI = import.meta.env.VITE_IPCONFIG
 const MONGODB_URI = import.meta.env.VITE_IPCONFIG;
-const MONGODB_URI_WS = MONGODB_URI.replace("http", "ws");
+const MONGODB_URI_WS = MONGODB_URI.replace('http', 'ws');
 
 const httpLink = new HttpLink({
   uri: MONGODB_URI,
@@ -43,7 +43,7 @@ const authLink = setContext((_, { headers }) => {
   return {
     headers: {
       ...headers,
-      authorization: localStorage.getItem("token") || "",
+      authorization: localStorage.getItem('token') || '',
     },
   };
 });
@@ -58,8 +58,8 @@ const splitLink = split(
   ({ query }) => {
     const definition = getMainDefinition(query);
     return (
-      definition.kind === "OperationDefinition" &&
-      definition.operation === "subscription"
+      definition.kind === 'OperationDefinition' &&
+      definition.operation === 'subscription'
     );
   },
   wsLink,
@@ -92,10 +92,10 @@ export const App = () => {
           <HashRouter>
             <Navbar></Navbar>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route path='/login' element={<Login />} />
+              <Route path='/register' element={<Register />} />
               <Route
-                path="/"
+                path='/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.all}>
                     <Home />
@@ -103,7 +103,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/logout"
+                path='/logout'
                 element={
                   <ProtectedRoute privacy={PRIVACY.everyone}>
                     <Logout />
@@ -111,7 +111,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/mesas"
+                path='/mesas'
                 element={
                   <ProtectedRoute privacy={PRIVACY.mesas}>
                     <Tables />
@@ -119,7 +119,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/mesas/:id"
+                path='/mesas/:id'
                 element={
                   <ProtectedRoute privacy={PRIVACY.mesas}>
                     <TableDetails />
@@ -127,7 +127,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/base"
+                path='/base'
                 element={
                   <ProtectedRoute privacy={PRIVACY.base}>
                     <Base />
@@ -135,7 +135,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/estado"
+                path='/estado'
                 element={
                   <ProtectedRoute privacy={PRIVACY.base + PRIVACY.prensa}>
                     <Estado />
@@ -143,7 +143,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/escrutinio"
+                path='/escrutinio'
                 element={
                   <ProtectedRoute privacy={PRIVACY.base + PRIVACY.prensa}>
                     <Escrutinio />
@@ -151,7 +151,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/prensa"
+                path='/prensa'
                 element={
                   <ProtectedRoute privacy={PRIVACY.prensa}>
                     <Prensa />
@@ -159,7 +159,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/tables/"
+                path='/admin/tables/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <AdminTables />
@@ -167,7 +167,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/tables/:id"
+                path='/admin/tables/:id'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <AdminTableDetails />
@@ -175,7 +175,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/partidos/"
+                path='/admin/partidos/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <AdminFactions />
@@ -183,7 +183,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/usuarios/"
+                path='/admin/usuarios/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <AdminUsers />
@@ -191,7 +191,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/exportar/"
+                path='/admin/exportar/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <Export />
@@ -204,10 +204,10 @@ export const App = () => {
           <BrowserRouter>
             <Navbar></Navbar>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route path='/login' element={<Login />} />
+              <Route path='/register' element={<Register />} />
               <Route
-                path="/"
+                path='/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.all}>
                     <Home />
@@ -215,7 +215,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/logout"
+                path='/logout'
                 element={
                   <ProtectedRoute privacy={PRIVACY.everyone}>
                     <Logout />
@@ -223,7 +223,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/mesas"
+                path='/mesas'
                 element={
                   <ProtectedRoute privacy={PRIVACY.mesas}>
                     <Tables />
@@ -231,7 +231,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/mesas/:id"
+                path='/mesas/:id'
                 element={
                   <ProtectedRoute privacy={PRIVACY.mesas}>
                     <TableDetails />
@@ -239,7 +239,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/base"
+                path='/base'
                 element={
                   <ProtectedRoute privacy={PRIVACY.base}>
                     <Base />
@@ -247,7 +247,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/estado"
+                path='/estado'
                 element={
                   <ProtectedRoute privacy={PRIVACY.base + PRIVACY.prensa}>
                     <Estado />
@@ -255,7 +255,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/escrutinio"
+                path='/escrutinio'
                 element={
                   <ProtectedRoute privacy={PRIVACY.base + PRIVACY.prensa}>
                     <Escrutinio />
@@ -263,7 +263,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/prensa"
+                path='/prensa'
                 element={
                   <ProtectedRoute privacy={PRIVACY.prensa}>
                     <Prensa />
@@ -271,7 +271,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/tables/"
+                path='/admin/tables/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <AdminTables />
@@ -279,7 +279,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/tables/:id"
+                path='/admin/tables/:id'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <AdminTableDetails />
@@ -287,7 +287,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/partidos/"
+                path='/admin/partidos/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <AdminFactions />
@@ -295,7 +295,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/usuarios/"
+                path='/admin/usuarios/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <AdminUsers />
@@ -303,7 +303,7 @@ export const App = () => {
                 }
               />
               <Route
-                path="/admin/exportar/"
+                path='/admin/exportar/'
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <Export />

@@ -6,7 +6,7 @@ WORKDIR /home/grillaServer
 
 COPY . .
 
-RUN npm install
+RUN pnpm install
 
 EXPOSE 4000
 
