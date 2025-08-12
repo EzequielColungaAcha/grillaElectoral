@@ -1,0 +1,13 @@
+version: '3.9' # or omit version since it's deprecated
+
+services:
+  monguito:
+    image: mongo:latest
+    container_name: monguito
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodata:/data/db
+
+volumes:
+  mongodata:

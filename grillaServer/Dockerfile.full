@@ -1,0 +1,25 @@
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --prod --frozen-lockfile
+
+COPY . .
+RUN pnpm store prune
+
+# Production stage
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/server ./server
+
+ENV MONGODB_URI=mongodb://username:password@monguito:27017
+ENV NODE_ENV=production
+EXPOSE 4000
+CMD ["node", "server/index.js"]
