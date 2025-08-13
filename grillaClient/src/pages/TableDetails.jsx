@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useSubscription } from "@apollo/client";
+import { useSubscription } from "@apollo/client";
+import { useOptimizedQuery } from "../hooks/useOptimizedQuery";
 import { GET_TABLE } from "../graphql/tables.js";
 import {
   TABLE_CHANGED,
@@ -19,11 +20,12 @@ import PersonsTable from "../components/persons/PersonsTable.jsx";
 export function TableDetails() {
   const params = useParams();
 
-  const { data, loading, error, refetch } = useQuery(GET_TABLE, {
+  const { data, loading, error, refetch } = useOptimizedQuery(GET_TABLE, {
     variables: {
       id: params.id,
     },
     skip: !params.id,
+    fetchPolicy: 'cache-first',
   });
 
   const { data: personDeleted } = useSubscription(PERSON_DELETED, {

@@ -1,10 +1,14 @@
 import { TableList } from "../components/tables/TableList";
-import { useQuery, useSubscription } from "@apollo/client";
+import { useSubscription } from "@apollo/client";
+import { useOptimizedQuery } from "../hooks/useOptimizedQuery";
 import { GET_TABLES } from "../graphql/tables";
 import { TABLE_ADDED, TABLE_DELETED } from "../graphql/subscription";
 
 export function Tables() {
-  const { loading, error, data, refetch } = useQuery(GET_TABLES);
+  const { loading, error, data, refetch } = useOptimizedQuery(GET_TABLES, {
+    fetchPolicy: 'cache-first',
+    notifyOnNetworkStatusChange: true,
+  });
 
   const { data: tableAdded } = useSubscription(TABLE_ADDED, {
     onData: ({ client, onData }) => {
