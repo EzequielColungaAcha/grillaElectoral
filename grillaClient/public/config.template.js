@@ -1,5 +1,0 @@
-window.__ENV__ = {
-  VITE_IPCONFIG: '${VITE_IPCONFIG}',
-  VITE_SEATS: '${VITE_SEATS}',
-  VITE_THRESHOLD: '${VITE_THRESHOLD}',
-};

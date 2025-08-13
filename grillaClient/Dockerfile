@@ -1,17 +1,27 @@
-FROM node:alpine
+FROM node:20-alpine AS build
 
-RUN mkdir -p /home/grillaClient
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-WORKDIR /home/grillaClient
+WORKDIR /app
 
+# Install dependencies only once
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Copy source and build
 COPY . .
+ARG VITE_IPCONFIG
+ARG VITE_SEATS
+ARG VITE_THRESHOLD
+ENV VITE_IPCONFIG=${VITE_IPCONFIG}
+ENV VITE_SEATS=${VITE_SEATS}
+ENV VITE_THRESHOLD=${VITE_THRESHOLD}
+RUN pnpm build
 
-RUN pnpm install
-
-ENV VITE_IPCONFIG=http://localhost:4000/graphql
-ENV VITE_SEATS=3
-ENV VITE_THRESHOLD=0
-
-EXPOSE 4173
-
-CMD ["pnpm", "start"]
+# Production image using Nginx
+FROM nginx:1.27-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

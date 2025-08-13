@@ -1,5 +1,3 @@
-version: '3.9' # or omit version since it's deprecated
-
 services:
   monguito:
     image: mongo:latest

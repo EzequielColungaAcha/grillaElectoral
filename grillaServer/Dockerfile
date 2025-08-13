@@ -1,16 +1,15 @@
-FROM node:alpine
+FROM node:20-alpine AS build
 
-RUN mkdir -p /home/grillaServer
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-WORKDIR /home/grillaServer
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
 
-RUN pnpm install
-
+ENV NODE_ENV=production
 EXPOSE 4000
-
-ENV MONGODB_URI="mongodb://ezziel:fawst@monguito:27017"
-ENV NODE_ENV="production"
-
-CMD ["node", "/home/grillaServer/server/index.js"]
+CMD ["node", "server/index.js"]
