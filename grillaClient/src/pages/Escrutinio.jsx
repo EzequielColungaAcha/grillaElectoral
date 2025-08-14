@@ -1,4 +1,5 @@
-import { useQuery, useSubscription } from "@apollo/client";
+import { useSubscription } from "@apollo/client";
+import { useOptimizedQuery } from "../hooks/useOptimizedQuery";
 import { radioQuery } from "../graphql/radio";
 import {
   FACTION_VOTES_SEND,
@@ -12,7 +13,10 @@ import { seats, threshold } from "../config";
 import { useState } from "react";
 
 export function Escrutinio() {
-  const { data, loading, error, refetch } = useQuery(radioQuery);
+  const { data, loading, error, refetch } = useOptimizedQuery(radioQuery, {
+    fetchPolicy: 'cache-first',
+    pollInterval: 20000, // Poll every 20 seconds for vote updates
+  });
 
   const { data: votesSend } = useSubscription(FACTION_VOTES_SEND, {
     onData: ({ client, onData }) => {

@@ -1,17 +1,19 @@
 import { AddTable } from "../components/admin/adminTables/AddTable";
 import { AdminTableList } from "../components/admin/adminTables/AdminTableList";
 import { AffiliateCSVButton } from "../components/admin/adminTables/buttons/AffiliateCSVButton";
-import { useQuery, useSubscription, NetworkStatus } from "@apollo/client";
+import { useSubscription, NetworkStatus } from "@apollo/client";
+import { useOptimizedQuery } from "../hooks/useOptimizedQuery";
 import { tablesQuery } from "../graphql/admin";
 import { TABLE_ADDED, TABLE_DELETED } from "../graphql/subscription";
 import { UploadMassiveCSVButton } from "../components/admin/adminTables/buttons/UploadMassiveCSVButton";
 import { useState } from "react";
 
 export const AdminTables = () => {
-  const { loading, error, data, refetch, networkStatus } = useQuery(
+  const { loading, error, data, refetch, networkStatus } = useOptimizedQuery(
     tablesQuery,
     {
       notifyOnNetworkStatusChange: true,
+      fetchPolicy: 'cache-first',
     }
   );
 

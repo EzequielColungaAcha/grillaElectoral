@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useSubscription } from "@apollo/client";
+import { useSubscription } from "@apollo/client";
+import { useOptimizedQuery } from "../hooks/useOptimizedQuery";
 import { GET_PERSONS } from "../graphql/persons.js";
 import {
   TABLE_CHANGED,
@@ -24,7 +25,10 @@ export const Base = () => {
   const [voteSearch, setVoteSearch] = useState("all");
   const [affiliateSearch, setAffiliateSearch] = useState("all");
 
-  const { data, loading, error, refetch } = useQuery(GET_PERSONS);
+  const { data, loading, error, refetch } = useOptimizedQuery(GET_PERSONS, {
+    fetchPolicy: 'cache-first',
+    pollInterval: 30000, // Poll every 30 seconds for updates
+  });
 
   const { data: voted } = useSubscription(PERSON_VOTED, {
     onData: (data) => {

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client';
 
 export const radioQuery = gql`
   query radioQuery {
@@ -12,6 +12,7 @@ export const radioQuery = gql`
       factions {
         _id
         config {
+          _id
           color
           name
           position

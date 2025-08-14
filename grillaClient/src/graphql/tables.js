@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client';
 
 export const GET_TABLES = gql`
   query getTables {
@@ -118,6 +118,7 @@ export const UPDATE_STATUS = gql`
       userName: $userName
       userRol: $userRol
     ) {
+      _id
       status
     }
   }
