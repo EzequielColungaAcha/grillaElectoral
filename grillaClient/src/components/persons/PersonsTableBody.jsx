@@ -1,8 +1,8 @@
-import React, { useContext } from "react";
-import { AuthContext } from "../../context/authContext";
-import throttle from "lodash.throttle";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
+import React, { useContext } from 'react';
+import { AuthContext } from '../../context/authContext';
+import throttle from 'lodash.throttle';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const MySwal = withReactContent(Swal);
 
@@ -56,10 +56,10 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
       }
     }, 100);
 
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener('scroll', onScroll);
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener('scroll', onScroll);
     };
   }, [setDisplayPositions, data?.length]);
 
@@ -68,7 +68,7 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
   // add a filler row at the top. The further down we scroll the taller this will be
   rows.push(
     <tr
-      key="startRowFiller"
+      key='startRowFiller'
       style={{ height: displayStart * itemRowHeight }}
     ></tr>
   );
@@ -81,20 +81,20 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
         ? rows.push(
             <tr
               key={i}
-              className="h-8 group cursor-pointer"
+              className='h-8 group cursor-pointer'
               onClick={() => {
                 !voteLoading &&
                   MySwal.fire({
                     title: `Deshacer el voto de \n${row.lastName.toUpperCase()}, ${row.firstName.toUpperCase()}\nNro de Orden: ${
                       row.order
                     }\nDNI: ${row.dni}?`,
-                    icon: "warning",
-                    iconColor: "#d33",
+                    icon: 'warning',
+                    iconColor: '#d33',
                     showCancelButton: true,
-                    confirmButtonColor: "#d33",
-                    cancelButtonColor: "#464646",
-                    confirmButtonText: "Deshacer",
-                    cancelButtonText: "Cancelar",
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#464646',
+                    confirmButtonText: 'Deshacer',
+                    cancelButtonText: 'Cancelar',
                     reverseButtons: true,
                   }).then((result) => {
                     if (result.isConfirmed) {
@@ -121,32 +121,32 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
             >
               <td>
                 {voteLoading ? (
-                  <div className="flex flex-col animate-pulse bg-slate-700 bg-opacity-50 text-white space-y-3 px-4 py-6 rounded-lg shadow items-center cursor-default">
-                    <h1 className="h-12 bg-gray-300 rounded-lg w-24 dark:bg-gray-600"></h1>
+                  <div className='flex flex-col animate-pulse bg-slate-700 bg-opacity-50 text-white space-y-3 px-4 py-6 rounded-lg shadow items-center cursor-default'>
+                    <h1 className='h-12 bg-gray-300 rounded-lg w-24 dark:bg-gray-600'></h1>
 
-                    <p className="w-3/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700"></p>
-                    <p className="w-4/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700"></p>
-                    <div className="flex justify-between w-full">
-                      <p className="w-2/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700"></p>
-                      <p className="w-1/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700"></p>
+                    <p className='w-3/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
+                    <p className='w-4/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
+                    <div className='flex justify-between w-full'>
+                      <p className='w-2/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
+                      <p className='w-1/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-green-700 hover:bg-green-600 bg-opacity-50 text-black space-y-3 p-4 rounded-lg shadow">
-                    <div className="text-center font-bold text-5xl">
+                  <div className='bg-green-700 hover:bg-green-600 bg-opacity-50 text-black space-y-3 p-4 rounded-lg shadow'>
+                    <div className='text-center font-bold text-5xl'>
                       #{row.order}
                     </div>
-                    <div className="flex flex-col text-center text-xl">
-                      <h1 className="font-bold text-2xl uppercase">
+                    <div className='flex flex-col text-center text-xl'>
+                      <h1 className='font-bold text-2xl uppercase'>
                         {row.lastName}
                       </h1>
-                      <h1 className="font-bold text-2xl uppercase">
+                      <h1 className='font-bold text-2xl uppercase'>
                         {row.firstName}
                       </h1>
-                      <div className="flex justify-between">
-                        <div className="font-bold text-xl">DNI: {row.dni}</div>
-                        <div className="w-20">
-                          <span className="p-1.5 text-sm font-medium uppercase tracking-wider text-green-800 rounded-lg ">
+                      <div className='flex justify-between'>
+                        <div className='font-bold text-xl'>DNI: {row.dni}</div>
+                        <div className='w-20'>
+                          <span className='p-1.5 text-sm font-medium uppercase tracking-wider text-green-800 rounded-lg '>
                             Votó
                           </span>
                         </div>
@@ -160,10 +160,9 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
         : rows.push(
             <tr
               key={i}
-              className="h-8 group cursor-pointer"
+              className='h-8 group cursor-pointer'
               onClick={() => {
                 const voteValue = row.vote == true ? false : true;
-                console.log(user);
                 !voteLoading &&
                   updateVote({
                     variables: {
@@ -185,32 +184,32 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
             >
               <td>
                 {voteLoading ? (
-                  <div className="flex flex-col animate-pulse bg-slate-700 bg-opacity-50 text-white space-y-3 px-4 py-6 rounded-lg shadow items-center cursor-default">
-                    <h1 className="h-12 bg-gray-300 rounded-lg w-24 dark:bg-gray-600"></h1>
+                  <div className='flex flex-col animate-pulse bg-slate-700 bg-opacity-50 text-white space-y-3 px-4 py-6 rounded-lg shadow items-center cursor-default'>
+                    <h1 className='h-12 bg-gray-300 rounded-lg w-24 dark:bg-gray-600'></h1>
 
-                    <p className="w-3/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700"></p>
-                    <p className="w-4/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700"></p>
-                    <div className="flex justify-between w-full">
-                      <p className="w-2/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700"></p>
-                      <p className="w-1/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700"></p>
+                    <p className='w-3/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
+                    <p className='w-4/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
+                    <div className='flex justify-between w-full'>
+                      <p className='w-2/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
+                      <p className='w-1/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-red-700 hover:bg-red-600 bg-opacity-50 text-black space-y-3 p-4 rounded-lg shadow">
-                    <div className="text-center font-bold text-5xl">
+                  <div className='bg-red-700 hover:bg-red-600 bg-opacity-50 text-black space-y-3 p-4 rounded-lg shadow'>
+                    <div className='text-center font-bold text-5xl'>
                       #{row.order}
                     </div>
-                    <div className="flex flex-col text-center text-xl">
-                      <h1 className="font-bold text-2xl uppercase">
+                    <div className='flex flex-col text-center text-xl'>
+                      <h1 className='font-bold text-2xl uppercase'>
                         {row.lastName}
                       </h1>
-                      <h1 className="font-bold text-2xl uppercase">
+                      <h1 className='font-bold text-2xl uppercase'>
                         {row.firstName}
                       </h1>
-                      <div className="flex justify-between">
-                        <div className="font-bold text-xl">DNI: {row.dni}</div>
-                        <div className="w-20">
-                          <span className="p-1.5 text-sm font-medium uppercase tracking-wider text-red-800 rounded-lg ">
+                      <div className='flex justify-between'>
+                        <div className='font-bold text-xl'>DNI: {row.dni}</div>
+                        <div className='w-20'>
+                          <span className='p-1.5 text-sm font-medium uppercase tracking-wider text-red-800 rounded-lg '>
                             No Votó
                           </span>
                         </div>
@@ -227,12 +226,12 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
   // add a filler row at the end. The further up we scroll the taller this will be
   rows.push(
     <tr
-      key="endRowFiller"
+      key='endRowFiller'
       style={{ height: (data?.length - displayEnd) * itemRowHeight }}
     ></tr>
   );
 
-  return <tbody className="divide-y divide-slate-300">{rows}</tbody>;
+  return <tbody className='divide-y divide-slate-300'>{rows}</tbody>;
 };
 
 export default PersonsTableBody;

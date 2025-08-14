@@ -24,14 +24,13 @@ THRESHOLD=0
 ## docker-compose.yml
 
 ```yaml
-version: "3.8"
+version: '3.8'
 services:
   client:
     build: ./grillaClient/.
     ports:
       - ${CLIENT_PORT}:4173
     environment:
-      - VITE_IPCONFIG=${IPCONFIG}/graphql
       - VITE_SEATS=${SEATS}
       - VITE_THRESHOLD=${THRESHOLD}
   server:
@@ -71,10 +70,6 @@ services:
 
 - Client
 
-  - VITE_IPCONFIG: por defecto http://localhost:4000/graphql, colocar la IP que apunte al servidor.
-
-  - VITE*EXPORT: por defecto http://localhost:3000, colocar la IP del \_servidor* para exportar.
-
 - Server
 
   - NODE_ENV: por defecto "production", esto evita que se muestre el playground de Graphql. Colocar cualquier otra cosa si se quiere habilitar el playground.
@@ -84,6 +79,6 @@ services:
 
 - Mongo
 
-  - MONGO_INITDB_ROOT_USERNAME: dar un nombre de usuario a la base de datos, ejemplo mongodb://**_ezziel_**:fawst@monguito:27017
+  - MONGO*INITDB_ROOT_USERNAME: dar un nombre de usuario a la base de datos, ejemplo mongodb://\*\*\_ezziel*\*\*:fawst@monguito:27017
 
-  - MONGO_INITDB_ROOT_PASSWORD: dar una contraseña a la base de datos, ejemplo mongodb://ezziel:**_fawst_**@monguito:27017
+  - MONGO*INITDB_ROOT_PASSWORD: dar una contraseña a la base de datos, ejemplo mongodb://ezziel:\*\*\_fawst*\*\*@monguito:27017

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client';
 
 export const CREATE_FACTION = gql`
   mutation ($name: String!, $votes: Int!, $tableId: ID!) {
@@ -27,6 +27,7 @@ export const CREATE_FACTION_CONFIG = gql`
 export const UPDATE_FACTION = gql`
   mutation ($id: ID!, $votes: Int!) {
     updateFaction(_id: $id, votes: $votes) {
+      _id
       votes
     }
   }
@@ -90,6 +91,7 @@ export const GET_TABLE_VOTES = gql`
         _id
         votes
         config {
+          _id
           name
           color
           position

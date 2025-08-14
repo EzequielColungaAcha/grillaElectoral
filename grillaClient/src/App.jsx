@@ -31,9 +31,9 @@ import { Export } from './pages/Export.jsx';
 import { Estado } from './pages/Estado.jsx';
 import { Escrutinio } from './pages/Escrutinio.jsx';
 
-// const MONGODB_URI = import.meta.env.VITE_IPCONFIG
-const MONGODB_URI = import.meta.env.VITE_IPCONFIG;
-const MONGODB_URI_WS = MONGODB_URI.replace('http', 'ws');
+const MONGODB_URI = '/graphql';
+const MONGODB_URI_WS =
+  window.location.origin.replace(/^http/, 'ws') + MONGODB_URI;
 
 const httpLink = new HttpLink({
   uri: MONGODB_URI,
@@ -82,13 +82,12 @@ const client = new ApolloClient({
     },
   }),
 });
-const routerHandler_HashTrue_BrowserFalse = import.meta.env.VITE_HASH_BROWSER;
 
 export const App = () => {
   return (
     <AuthProvider>
       <ApolloProvider client={client}>
-        {routerHandler_HashTrue_BrowserFalse === true ? (
+        {import.meta.env.VITE_HASH_BROWSER === true ? (
           <HashRouter>
             <Navbar></Navbar>
             <Routes>

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client';
 
 export const adminQuery = gql`
   query adminQuery {
@@ -16,6 +16,7 @@ export const adminQuery = gql`
       voted
       totalPersons
       persons {
+        _id
         order
         firstName
         lastName
@@ -25,6 +26,7 @@ export const adminQuery = gql`
         message
         affiliate
         table {
+          _id
           number
         }
       }
@@ -92,6 +94,7 @@ export const exportQuery = gql`
       totalPersons
       factions {
         config {
+          _id
           color
           name
           position
@@ -99,6 +102,7 @@ export const exportQuery = gql`
         votes
       }
       persons {
+        _id
         tableNumber
         order
         firstName

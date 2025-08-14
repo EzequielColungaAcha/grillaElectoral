@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client';
 
 export const CREATE_PERSON = gql`
   mutation (
@@ -111,6 +111,7 @@ export const UPDATE_VOTE = gql`
       userRol: $userRol
       tableNumber: $tableNumber
     ) {
+      _id
       vote
     }
   }
@@ -149,6 +150,7 @@ export const GET_PERSONS = gql`
       tableNumber
     }
     tables {
+      _id
       number
       totalPersons
     }

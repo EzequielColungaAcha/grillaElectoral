@@ -1,5 +1,3 @@
-// export const MONGODB_URI = import.meta.env.VITE_IPCONFIG
-
 // * En esta configuración se define quienes pueden acceder a las diferentes secciones.
 // * Los roles disponibles para los usuarios son 'fiscal', 'prensa', 'base' y 'admin'.
 export const PRIVACY = {
