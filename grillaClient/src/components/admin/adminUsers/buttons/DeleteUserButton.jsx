@@ -1,39 +1,40 @@
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import { useMutation } from "@apollo/client";
 import { DELETE_USER } from "../../../../graphql/users";
+import { useState } from "react";
+import { ConfirmModal } from "../../../modals/ConfirmModal";
 
 export const DeleteUserButton = ({ userD }) => {
-  const MySwal = withReactContent(Swal);
-
+  const [showConfirm, setShowConfirm] = useState(false);
   const [deleteUser] = useMutation(DELETE_USER);
 
+  const handleConfirm = () => {
+    deleteUser({
+      variables: {
+        id: userD._id,
+      },
+    });
+    setShowConfirm(false);
+  };
+
   return (
-    <button
-      onClick={() => {
-        MySwal.fire({
-          title: `Desea ELIMINAR el Usuario ${userD.username}?`,
-          icon: "warning",
-          iconColor: "#d33",
-          showCancelButton: true,
-          confirmButtonColor: "#d33",
-          cancelButtonColor: "#464646",
-          confirmButtonText: "Eliminar",
-          cancelButtonText: "Cancelar",
-          reverseButtons: true,
-        }).then((result) => {
-          if (result.isConfirmed) {
-            deleteUser({
-              variables: {
-                id: userD._id,
-              },
-            });
-          }
-        });
-      }}
-      className="bg-red-800 py-2 px-5 hover:bg-red-600"
-    >
-      Eliminar
-    </button>
+    <>
+      <button
+        onClick={() => setShowConfirm(true)}
+        className="bg-red-800 py-2 px-5 hover:bg-red-600"
+      >
+        Eliminar
+      </button>
+      
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleConfirm}
+        title={`¿Eliminar usuario ${userD.username}?`}
+        message="Esta acción no se puede deshacer. El usuario será eliminado permanentemente."
+        type="danger"
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+      />
+    </>
   );
 };

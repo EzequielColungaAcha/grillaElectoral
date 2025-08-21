@@ -1,4 +1,4 @@
-import { gql } from "graphql-tag";
+import { gql } from 'graphql-tag';
 
 export const typeDefs = gql`
   type Query {
@@ -10,12 +10,30 @@ export const typeDefs = gql`
     # // * Query for Table
     tables: [Table]!
     table(_id: ID!): Table!
+    tablesWithCounts: [TableWithCounts]!
+    tablesPaginated(
+      limit: Int
+      offset: Int
+      search: String
+    ): TablesPaginatedResult!
     # // * ...
 
     # // * Query for Person
-    persons: [Person]
+    persons(
+      limit: Int
+      offset: Int
+      tableNumber: Int
+      search: String
+      vote: Boolean
+      affiliate: Boolean
+    ): PersonsPaginatedResult!
     person(_id: ID!): Person!
-    PersonArray: [Person]!
+    personsCount(
+      tableNumber: Int
+      search: String
+      vote: Boolean
+      affiliate: Boolean
+    ): Int!
     # // * ...
 
     # // * Query for quantities
@@ -38,6 +56,15 @@ export const typeDefs = gql`
     factionsConfig: [FactionConfig]
     anyFaction: Int!
     factionChartJS: String
+
+    # // * Query for logs
+    logs(
+      limit: Int
+      offset: Int
+      action: String
+      startDate: String
+      endDate: String
+    ): LogsPaginatedResult!
     # // * ...
   }
 
@@ -96,6 +123,8 @@ export const typeDefs = gql`
       address: String
       message: String
       affiliate: Boolean
+      referer: String
+      driver: String
       tableId: ID!
       tableNumber: Int!
       userName: String
@@ -112,10 +141,22 @@ export const typeDefs = gql`
       address: String
       message: String
       affiliate: Boolean
+      referer: String
+      driver: String
       tableId: ID
       userName: String
       userRol: String
       tableNumber: Int
+      originalFirstName: String
+      originalLastName: String
+      originalDni: String
+      originalVote: Boolean
+      originalOrder: Int
+      originalAddress: String
+      originalMessage: String
+      originalAffiliate: Boolean
+      originalReferer: String
+      originalDriver: String
     ): Person
 
     deletePerson(_id: ID!): Person!
@@ -197,6 +238,54 @@ export const typeDefs = gql`
     factions: [Faction]
   }
 
+  type TableWithCounts {
+    _id: ID!
+    number: Int!
+    description: String
+    status: Status!
+    totalPersons: Int
+    voted: Int
+    factionsCount: Int
+  }
+
+  type TablesPaginatedResult {
+    tables: [TableWithCounts]!
+    totalCount: Int!
+    hasMore: Boolean!
+  }
+
+  type LogEntry {
+    id: ID!
+    timestamp: String!
+    level: String!
+    message: String!
+    action: String
+    user: LogUser
+    target: LogTarget
+    changes: String
+    metadata: String
+  }
+
+  type LogUser {
+    id: String
+    username: String!
+    role: String!
+    name: String!
+  }
+
+  type LogTarget {
+    type: String!
+    id: String
+    identifier: String
+    number: Int
+  }
+
+  type LogsPaginatedResult {
+    logs: [LogEntry]!
+    totalCount: Int!
+    hasMore: Boolean!
+  }
+
   type Person {
     _id: ID!
     firstName: String!
@@ -207,10 +296,18 @@ export const typeDefs = gql`
     address: String
     message: String
     affiliate: Boolean
+    referer: String
+    driver: String
     table: Table!
     tableNumber: Int!
     createdAt: String
     updatedAt: String
+  }
+
+  type PersonsPaginatedResult {
+    persons: [Person]!
+    totalCount: Int!
+    hasMore: Boolean!
   }
 
   input Record {
@@ -222,6 +319,7 @@ export const typeDefs = gql`
     address: String
     message: String
     affiliate: Boolean
+    referer: String
     table: String!
     tableNumber: Int!
   }
@@ -233,6 +331,8 @@ export const typeDefs = gql`
     order: Int!
     address: String
     tableNumber: String
+    referer: String
+    driver: String
     affiliate: Boolean
   }
 
@@ -280,6 +380,7 @@ export const typeDefs = gql`
   # // * Subscriptions
   type Subscription {
     personVoted: Person!
+    personUpdated: Person!
     tableChange: Table!
     personAdded: Person!
     personDeleted: Person!

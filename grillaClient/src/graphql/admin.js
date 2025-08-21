@@ -25,6 +25,7 @@ export const adminQuery = gql`
         address
         message
         affiliate
+        referer
         table {
           _id
           number
@@ -83,6 +84,48 @@ export const usersQuery = gql`
   }
 `;
 
+export const logsQuery = gql`
+  query logsQuery(
+    $limit: Int
+    $offset: Int
+    $action: String
+    $startDate: String
+    $endDate: String
+  ) {
+    logs(
+      limit: $limit
+      offset: $offset
+      action: $action
+      startDate: $startDate
+      endDate: $endDate
+    ) {
+      logs {
+        id
+        timestamp
+        level
+        message
+        action
+        user {
+          id
+          username
+          role
+          name
+        }
+        target {
+          type
+          id
+          identifier
+          number
+        }
+        changes
+        metadata
+      }
+      totalCount
+      hasMore
+    }
+  }
+`;
+
 export const exportQuery = gql`
   query exportQuery {
     tables {
@@ -112,7 +155,34 @@ export const exportQuery = gql`
         address
         message
         affiliate
+        referer
+        driver
       }
+    }
+    logs {
+      logs {
+        id
+        timestamp
+        level
+        message
+        action
+        user {
+          id
+          username
+          role
+          name
+        }
+        target {
+          type
+          id
+          identifier
+          number
+        }
+        changes
+        metadata
+      }
+      totalCount
+      hasMore
     }
   }
 `;

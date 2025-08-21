@@ -1,7 +1,7 @@
-import React from "react";
-import ReactExport from "react-excel-exportz";
-import { useQuery } from "@apollo/client";
-import { exportQuery } from "../graphql/admin";
+import React from 'react';
+import ReactExport from 'react-excel-exportz';
+import { useQuery } from '@apollo/client';
+import { exportQuery } from '../graphql/admin';
 
 export const Export = () => {
   const { loading, error, data, refetch } = useQuery(exportQuery);
@@ -37,26 +37,26 @@ export const Export = () => {
     <ExcelFile
       filename={`Datos Grilla Electoral (unificado) ${day}-${month}-${year}`}
       element={
-        <button className="p-3 mt-5 bg-slate-600 rounded flex items-center gap-2 hover:bg-slate-500">
-          Descargar Archivo Unificado
+        <button className='p-3 mt-5 bg-green-700 rounded flex items-center gap-2 hover:bg-green-900'>
+          Descargar Excel Unificado
         </button>
       }
     >
       <ExcelSheet data={result.persons} name={`Datos ${day}-${month}-${year}`}>
-        <ExcelColumn label="Mesa" value="table" />
-        <ExcelColumn label="Orden" value="order" />
-        <ExcelColumn label="Nombre" value="firstName" />
-        <ExcelColumn label="Apellido" value="lastName" />
-        <ExcelColumn label="DNI" value="dni" />
+        <ExcelColumn label='Mesa' value='table' />
+        <ExcelColumn label='Orden' value='order' />
+        <ExcelColumn label='Nombre' value='firstName' />
+        <ExcelColumn label='Apellido' value='lastName' />
+        <ExcelColumn label='DNI' value='dni' />
         <ExcelColumn
-          label="Voto"
-          value={(col) => (col.vote ? "Votó" : "No Votó")}
+          label='Voto'
+          value={(col) => (col.vote ? 'Votó' : 'No Votó')}
         />
         <ExcelColumn
-          label="Afiliado"
-          value={(col) => (col.affiliate ? "Si" : "No")}
+          label='Afiliado'
+          value={(col) => (col.affiliate ? 'Si' : 'No')}
         />
-        <ExcelColumn label="Mensaje" value="message" />
+        <ExcelColumn label='Mensaje' value='message' />
       </ExcelSheet>
     </ExcelFile>
   );
@@ -65,8 +65,8 @@ export const Export = () => {
     <ExcelFile
       filename={`Datos Grilla Electoral (hojas) ${day}-${month}-${year}`}
       element={
-        <button className="p-3 mt-5 bg-slate-600 rounded flex items-center gap-2 hover:bg-slate-500">
-          Descargar Archivo
+        <button className='p-3 mt-5 bg-green-700 rounded flex items-center gap-2 hover:bg-green-900'>
+          Descargar Excel Mesa/Hoja
         </button>
       }
     >
@@ -76,19 +76,19 @@ export const Export = () => {
           data={table.persons}
           name={`Mesa ${table.number}`}
         >
-          <ExcelColumn label="Orden" value="order" />
-          <ExcelColumn label="Nombre" value="firstName" />
-          <ExcelColumn label="Apellido" value="lastName" />
-          <ExcelColumn label="DNI" value="dni" />
+          <ExcelColumn label='Orden' value='order' />
+          <ExcelColumn label='Nombre' value='firstName' />
+          <ExcelColumn label='Apellido' value='lastName' />
+          <ExcelColumn label='DNI' value='dni' />
           <ExcelColumn
-            label="Voto"
-            value={(col) => (col.vote ? "Votó" : "No Votó")}
+            label='Voto'
+            value={(col) => (col.vote ? 'Votó' : 'No Votó')}
           />
           <ExcelColumn
-            label="Afiliado"
-            value={(col) => (col.affiliate ? "Si" : "No")}
+            label='Afiliado'
+            value={(col) => (col.affiliate ? 'Si' : 'No')}
           />
-          <ExcelColumn label="Mensaje" value="message" />
+          <ExcelColumn label='Mensaje' value='message' />
         </ExcelSheet>
       ))}
     </ExcelFile>
@@ -97,14 +97,47 @@ export const Export = () => {
   const downloadJsonData = () => {
     // create file in browser
     const fileName = `Elecciones ${year} - Database`;
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
+
+    // Create a comprehensive export object
+    const exportData = {
+      exportInfo: {
+        exportDate: new Date().toISOString(),
+        year: year,
+        description:
+          'Exportación completa de datos electorales incluyendo logs del sistema',
+      },
+      tables: data.tables,
+      logs: {
+        entries: data.logs?.logs || [],
+        totalCount: data.logs?.totalCount || 0,
+        hasMore: data.logs?.hasMore || false,
+        exportNote: 'Logs del sistema con todas las actividades registradas',
+      },
+      summary: {
+        totalTables: data.tables?.length || 0,
+        totalPersons:
+          data.tables?.reduce(
+            (sum, table) => sum + (table.persons?.length || 0),
+            0
+          ) || 0,
+        totalVoted:
+          data.tables?.reduce(
+            (sum, table) =>
+              sum + (table.persons?.filter((p) => p.vote)?.length || 0),
+            0
+          ) || 0,
+        totalLogs: data.logs?.totalCount || 0,
+      },
+    };
+
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
     const href = URL.createObjectURL(blob);
 
     // create "a" HTLM element with href to file
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = href;
-    link.download = fileName + ".json";
+    link.download = fileName + '.json';
     document.body.appendChild(link);
     link.click();
 
@@ -113,29 +146,29 @@ export const Export = () => {
     URL.revokeObjectURL(href);
   };
 
-  if (loading) return <span className="loader"></span>;
+  if (loading) return <span className='loader'></span>;
   if (error) return <p>Error</p>;
 
   return (
-    <div className="flex flex-col gap-5 justify-center items-center h-screen">
-      <div className="flex justify-center items-center w-full h-1/2">
-        <div className="w-1/2 flex flex-col items-center text-center justify-center">
-          <h2>Archivo con las mesas separadas por hojas.</h2>
-          <div className="flex items-center justify-center">
+    <div className='flex flex-col gap-5 justify-center items-center h-screen'>
+      <div className='flex justify-center items-center w-full h-1/2'>
+        <div className='w-1/2 flex flex-col items-center text-center justify-center'>
+          <h2>Excel con las mesas separadas por hojas.</h2>
+          <div className='flex items-center justify-center'>
             {multipleSheetFile}
           </div>
         </div>
-        <div className="w-1/2 flex flex-col items-center text-center justify-center">
-          <h2>Archivo con todos los datos en una única hoja.</h2>
-          <div className="flex items-center justify-center">
+        <div className='w-1/2 flex flex-col items-center text-center justify-center'>
+          <h2>Excel con todos los datos en una única hoja.</h2>
+          <div className='flex items-center justify-center'>
             {singleSheetFile}
           </div>
         </div>
       </div>
-      <div className="flex flex-col justify-start items-center w-full h-1/2">
-        <h2>Archivo con todos los datos para ser utilizado en app offline.</h2>
+      <div className='flex flex-col justify-start items-center w-full h-1/2'>
+        <h2>Json con todos los datos para ser utilizado en app offline.</h2>
         <button
-          className="p-3 mt-5 bg-slate-600 rounded flex items-center gap-2 hover:bg-slate-500"
+          className='p-3 mt-5 bg-sky-700 rounded flex items-center gap-2 hover:bg-sky-900'
           onClick={downloadJsonData}
         >
           Descargar Base de Datos

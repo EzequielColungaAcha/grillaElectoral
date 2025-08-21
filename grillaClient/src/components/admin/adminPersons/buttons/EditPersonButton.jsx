@@ -1,153 +1,152 @@
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-import { UPDATE_PERSON } from "../../../../graphql/persons";
-import { useMutation } from "@apollo/client";
+import { UPDATE_PERSON } from '../../../../graphql/persons';
+import { useMutation } from '@apollo/client';
+import { useState } from 'react';
+import { FormModal } from '../../../modals/FormModal';
+import { toast } from 'keep-react';
 
 export const EditPersonButton = ({ person }) => {
-  const MySwal = withReactContent(Swal);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [updatePerson] = useMutation(UPDATE_PERSON);
 
+  const handleSubmit = async (formData) => {
+    setLoading(true);
+    try {
+      const response = await updatePerson({
+        variables: {
+          id: person._id,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          dni: formData.dni,
+          vote: formData.vote === 'true',
+          order: parseInt(formData.order),
+          address: formData.address,
+          message: formData.message,
+          affiliate: formData.affiliate === 'true',
+          referer: formData.referer,
+          driver: formData.driver,
+          // Pass original values for change tracking
+          originalFirstName: person.firstName,
+          originalLastName: person.lastName,
+          originalDni: person.dni,
+          originalVote: person.vote,
+          originalOrder: person.order,
+          originalAddress: person.address,
+          originalMessage: person.message,
+          originalAffiliate: person.affiliate,
+          originalReferer: person.referer,
+          originalDriver: person.driver,
+          driver: formData.driver,
+        },
+      });
+
+      if (response.data.updatePerson._id) {
+        toast.success('Votante actualizado correctamente');
+        setShowModal(false);
+      }
+    } catch (error) {
+      toast.error('Error al actualizar votante');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formFields = [
+    {
+      name: 'firstName',
+      label: 'Nombre',
+      type: 'text',
+      defaultValue: person.firstName || '',
+      required: true,
+    },
+    {
+      name: 'lastName',
+      label: 'Apellido',
+      type: 'text',
+      defaultValue: person.lastName || '',
+      required: true,
+    },
+    {
+      name: 'dni',
+      label: 'DNI',
+      type: 'text',
+      defaultValue: person.dni || '',
+      required: true,
+    },
+    {
+      name: 'order',
+      label: 'Orden',
+      type: 'number',
+      defaultValue: person.order || 0,
+      required: true,
+    },
+    {
+      name: 'address',
+      label: 'Dirección',
+      type: 'text',
+      defaultValue: person.address || '',
+    },
+    {
+      name: 'message',
+      label: 'Mensaje',
+      type: 'text',
+      defaultValue: person.message || '',
+    },
+    {
+      name: 'affiliate',
+      label: 'Afiliado',
+      type: 'select',
+      options: [
+        { value: 'false', label: '-' },
+        { value: 'true', label: 'Afiliado' },
+      ],
+      defaultValue: person.affiliate ? 'true' : 'false',
+      required: true,
+    },
+    {
+      name: 'vote',
+      label: 'Voto',
+      type: 'select',
+      options: [
+        { value: 'false', label: 'No Votó' },
+        { value: 'true', label: 'Votó' },
+      ],
+      defaultValue: person.vote ? 'true' : 'false',
+      required: true,
+    },
+    {
+      name: 'referer',
+      label: 'Referente',
+      type: 'text',
+      defaultValue: person.referer || '',
+    },
+    {
+      name: 'driver',
+      label: 'Chofer',
+      type: 'text',
+      defaultValue: person.driver || '',
+    },
+  ];
+
   return (
-    <button
-      onClick={() => {
-        MySwal.fire({
-          title: `Editar votante`,
-          html: (
-            <form className="flex flex-col gap-3">
-              <label className="flex justify-between">
-                Nombre:
-                <input
-                  id="firstName"
-                  type="text"
-                  name="firstName"
-                  defaultValue={person.firstName}
-                  className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-                />
-              </label>
-              <label className="flex justify-between">
-                Apellido:
-                <input
-                  id="lastName"
-                  type="text"
-                  name="lastName"
-                  defaultValue={person.lastName}
-                  className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-                />
-              </label>
-              <label className="flex justify-between">
-                DNI:
-                <input
-                  id="dni"
-                  type="text"
-                  inputMode="Numeric"
-                  name="dni"
-                  defaultValue={person.dni}
-                  className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-                />
-              </label>
-              <label className="flex justify-between">
-                Orden:
-                <input
-                  id="order"
-                  type="number"
-                  name="order"
-                  defaultValue={person.order}
-                  className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-                />
-              </label>
-              <label className="flex justify-between">
-                Dirección:
-                <input
-                  id="address"
-                  type="text"
-                  name="address"
-                  defaultValue={person.address}
-                  className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-                />
-              </label>
-              <label className="flex justify-between">
-                Mensaje:
-                <input
-                  id="message"
-                  type="text"
-                  name="message"
-                  defaultValue={person.message}
-                  className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-                />
-              </label>
-              <label className="flex justify-between">
-                Afiliado:
-                <select
-                  id="affiliate"
-                  name="affiliate"
-                  defaultValue={person.affiliate}
-                  className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-                >
-                  <option value="">-</option>
-                  <option value="true">Afiliado</option>
-                </select>
-              </label>
-              <label className="flex justify-between">
-                Voto:
-                <select
-                  id="vote"
-                  name="vote"
-                  defaultValue={person.vote}
-                  className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-                >
-                  <option value="">No Votó</option>
-                  <option value="true">Votó</option>
-                </select>
-              </label>
-            </form>
-          ),
-          showCancelButton: true,
-          showConfirmButton: true,
-          confirmButtonText: "Enviar",
-          cancelButtonText: "Cerrar",
-          cancelButtonColor: '#464646',
-          showLoaderOnConfirm: true,
-          reverseButtons: true,
-          preConfirm: () => {
-            const id = person._id;
-            const firstName = document.querySelector("#firstName").value;
-            const lastName = document.querySelector("#lastName").value;
-            const dni = document.querySelector("#dni").value;
-            const address = document.querySelector("#address").value;
-            const message = document.querySelector("#message").value;
-            const affiliate = Boolean(document.querySelector("#affiliate").value);
-            const order = document.querySelector("#order").valueAsNumber;
-            const vote = Boolean(document.querySelector("#vote").value);
-            return updatePerson({
-              variables: {
-                id,
-                firstName,
-                lastName,
-                dni,
-                vote,
-                order,
-                address,
-                message,
-                affiliate,
-              },
-            })
-              .then((response) => {
-                if (!response.data.updatePerson._id) {
-                  throw new Error(response.statusText);
-                }
-                return;
-              })
-              .catch((error) => {
-                Swal.showValidationMessage(`Request failed: ${error}`);
-              });
-          },
-          allowOutsideClick: () => !Swal.isLoading(),
-        });
-      }}
-      className="bg-sky-800 py-2 px-5 hover:bg-sky-600"
-    >
-      Editar
-    </button>
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className='bg-sky-800 py-2 px-5 hover:bg-sky-600'
+      >
+        Editar
+      </button>
+
+      <FormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={handleSubmit}
+        title='Editar Votante'
+        fields={formFields}
+        loading={loading}
+        submitText='Guardar cambios'
+      />
+    </>
   );
 };

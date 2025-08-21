@@ -1,110 +1,86 @@
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-import { useMutation } from "@apollo/client";
-import { ImUserPlus } from "react-icons/im";
-import { ADD_USER } from "../../../graphql/users";
-
-const MySwal = withReactContent(Swal);
+import { useMutation } from '@apollo/client';
+import { ImUserPlus } from 'react-icons/im';
+import { ADD_USER } from '../../../graphql/users';
+import { useState } from 'react';
+import { FormModal } from '../../modals/FormModal';
+import { toast } from 'keep-react';
+import { useNavigate } from 'react-router-dom';
 
 export const AddUser = ({ firstUser }) => {
+  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const [addUser] = useMutation(ADD_USER);
 
-  const showModal = () => {
-    MySwal.fire({
-      title: `Añadir Usuario`,
-      html: (
-        <form className="flex flex-col gap-3">
-          <label className="flex justify-between">
-            Usuario:
-            <input
-              id="username"
-              type="text"
-              name="username"
-              className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-            />
-          </label>
-          <label className="flex justify-between">
-            Apellido y Nombre:
-            <input
-              id="name"
-              type="text"
-              name="name"
-              className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-            />
-          </label>
-          <label className="flex justify-between">
-            Contraseña:
-            <input
-              id="password"
-              type="password"
-              name="password"
-              className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-            />
-          </label>
-          <label className="flex justify-between">
-            Permisos:
-            <select
-              id="rol"
-              name="rol"
-              className="border-b-2 border-slate-600 ml-2 text-center p-1 text-slate-50"
-            >
-              {!firstUser ? (
-                <>
-                  <option value="fiscal">Fiscal</option>
-                  <option value="prensa">Prensa</option>
-                  <option value="base">Base</option>
-                </>
-              ) : (
-                <></>
-              )}
-              <option value="admin">Admin</option>
-            </select>
-          </label>
-        </form>
-      ),
-      showCancelButton: true,
-      showConfirmButton: true,
-      confirmButtonText: "Crear",
-      cancelButtonText: "Cerrar",
-      cancelButtonColor: "#464646",
-      showLoaderOnConfirm: true,
-      reverseButtons: true,
-      preConfirm: () => {
-        const username = document.querySelector("#username").value;
-        const name = document.querySelector("#name").value;
-        const password = document.querySelector("#password").value;
-        const rol = document.querySelector("#rol").value;
-
-        return addUser({
-          variables: {
-            registerInput: {
-              username,
-              name,
-              password,
-              rol,
-            },
+  const handleSubmit = async (formData) => {
+    setLoading(true);
+    try {
+      const response = await addUser({
+        variables: {
+          registerInput: {
+            username: formData.username,
+            name: formData.name,
+            password: formData.password,
+            rol: firstUser ? 'admin' : formData.rol,
           },
-        })
-          .then((response) => {
-            if (!response.data.registerUser._id) {
-              throw new Error(response.statusText);
-            }
-            return;
-          })
-          .catch((error) => {
-            Swal.showValidationMessage(`Error`);
-          });
-      },
-      allowOutsideClick: () => !Swal.isLoading(),
-    });
+        },
+      });
+
+      if (response.data.registerUser._id) {
+        toast.success('Usuario creado correctamente');
+        setShowModal(false);
+        if (firstUser) {
+          navigate('/');
+        }
+      }
+    } catch (error) {
+      toast.error('Error al crear usuario');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const roleOptions = firstUser
+    ? [{ value: 'admin', label: 'Admin' }]
+    : [
+        { value: 'fiscal', label: 'Fiscal' },
+        { value: 'prensa', label: 'Prensa' },
+        { value: 'base', label: 'Base' },
+        { value: 'admin', label: 'Admin' },
+      ];
+
+  const formFields = [
+    { name: 'username', label: 'Usuario', type: 'text', required: true },
+    { name: 'name', label: 'Apellido y Nombre', type: 'text', required: true },
+    { name: 'password', label: 'Contraseña', type: 'password', required: true },
+    {
+      name: 'rol',
+      label: 'Permisos',
+      type: 'select',
+      options: roleOptions,
+      required: true,
+    },
+  ];
+
   return (
-    <button
-      className="p-3 bg-slate-600 rounded flex items-center gap-2 disabled:hidden hover:bg-slate-500"
-      onClick={showModal}
-    >
-      <ImUserPlus className="text-xl fill-white" /> Añadir Usuario
-    </button>
+    <>
+      <button
+        className='p-3 bg-zinc-600 rounded flex items-center gap-2 disabled:hidden hover:bg-zinc-500'
+        onClick={() => setShowModal(true)}
+      >
+        <ImUserPlus className='text-xl fill-white' /> Añadir Usuario
+      </button>
+
+      <FormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={handleSubmit}
+        title='Añadir Usuario'
+        fields={formFields}
+        loading={loading}
+        submitText='Crear'
+      />
+    </>
   );
 };

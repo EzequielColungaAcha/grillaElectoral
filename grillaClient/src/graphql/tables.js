@@ -73,6 +73,8 @@ export const GET_TABLE = gql`
         address
         affiliate
         message
+        referer
+        driver
         tableNumber
       }
       factions {

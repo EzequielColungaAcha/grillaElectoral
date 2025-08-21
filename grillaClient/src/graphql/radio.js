@@ -2,23 +2,14 @@ import { gql } from '@apollo/client';
 
 export const radioQuery = gql`
   query radioQuery {
-    tables {
+    tablesWithCounts {
       _id
       number
       description
       status
       totalPersons
       voted
-      factions {
-        _id
-        config {
-          _id
-          color
-          name
-          position
-        }
-        votes
-      }
+      factionsCount
     }
     personTotal
     personVoted

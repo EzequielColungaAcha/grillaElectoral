@@ -15,7 +15,7 @@ import { createClient } from 'graphql-ws';
 import { Base } from './pages/Base.jsx';
 import { Prensa } from './pages/Prensa.jsx';
 import { AdminTableDetails } from './pages/AdminTableDetails.jsx';
-import { Login } from '../src/components/login/Login.jsx';
+import { Login } from './pages/Login.jsx';
 import { AuthProvider } from './context/authContext.jsx';
 import { setContext } from '@apollo/client/link/context';
 import Navbar from './components/navbar/Navbar.jsx';
@@ -30,10 +30,12 @@ import { AdminUsers } from './pages/AdminUsers.jsx';
 import { Export } from './pages/Export.jsx';
 import { Estado } from './pages/Estado.jsx';
 import { Escrutinio } from './pages/Escrutinio.jsx';
+import { AdminLogs } from './pages/AdminLogs.jsx';
 
-const MONGODB_URI = '/graphql';
-const MONGODB_URI_WS =
-  window.location.origin.replace(/^http/, 'ws') + MONGODB_URI;
+// const MONGODB_URI = '/graphql';
+const MONGODB_URI = 'http://localhost:4000/graphql';
+// const MONGODB_URI_WS = window.location.origin.replace(/^http/, 'ws') + MONGODB_URI;
+const MONGODB_URI_WS = MONGODB_URI.replace(/^http/, 'ws');
 
 const httpLink = new HttpLink({
   uri: MONGODB_URI,
@@ -197,6 +199,14 @@ export const App = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path='/admin/logs/'
+                element={
+                  <ProtectedRoute privacy={PRIVACY.admin}>
+                    <AdminLogs />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </HashRouter>
         ) : (
@@ -306,6 +316,14 @@ export const App = () => {
                 element={
                   <ProtectedRoute privacy={PRIVACY.admin}>
                     <Export />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/admin/logs/'
+                element={
+                  <ProtectedRoute privacy={PRIVACY.admin}>
+                    <AdminLogs />
                   </ProtectedRoute>
                 }
               />

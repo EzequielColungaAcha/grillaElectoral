@@ -1,4 +1,4 @@
-import { gql } from "graphql-tag";
+import { gql } from 'graphql-tag';
 
 export const PERSON_VOTED = gql`
   subscription {
@@ -12,6 +12,28 @@ export const PERSON_VOTED = gql`
       message
       address
       affiliate
+      table {
+        _id
+      }
+      tableNumber
+    }
+  }
+`;
+
+export const PERSON_UPDATED = gql`
+  subscription {
+    personUpdated {
+      _id
+      firstName
+      lastName
+      dni
+      order
+      vote
+      message
+      address
+      affiliate
+      referer
+      driver
       table {
         _id
       }

@@ -1,5 +1,5 @@
-import { useQuery, useSubscription } from "@apollo/client";
-import { radioQuery } from "../graphql/radio";
+import { useQuery, useSubscription } from '@apollo/client';
+import { radioQuery } from '../graphql/radio';
 import {
   FACTION_VOTES_SEND,
   FACTION_VOTES_UPDATE,
@@ -7,12 +7,17 @@ import {
   FACTION_CONFIG_ADDED,
   FACTION_CONFIG_DELETED,
   FACTION_DELETED,
-} from "../graphql/subscription";
-import { seats, threshold } from "../config";
-import { useState } from "react";
+  TABLE_CHANGED,
+} from '../graphql/subscription';
+import { seats, threshold } from '../config';
+import { useState } from 'react';
+import { toast } from 'keep-react';
+import { useLocation } from 'react-router-dom';
 
 export function Escrutinio() {
   const { data, loading, error, refetch } = useQuery(radioQuery);
+  const location = useLocation();
+  const isInPrensa = location.pathname === '/prensa';
 
   const { data: votesSend } = useSubscription(FACTION_VOTES_SEND, {
     onData: ({ client, onData }) => {
@@ -48,17 +53,37 @@ export function Escrutinio() {
     },
   });
 
-  if (loading) return <span className="loader"></span>;
+  const { data: tableChangedWithToast } = useSubscription(TABLE_CHANGED, {
+    onData: (data) => {
+      // Only show toast if not in Prensa page (to avoid duplicate toasts)
+      if (!isInPrensa) {
+        const changedTable = data.data.data.tableChange;
+        if (changedTable) {
+          if (changedTable.status === 'Cerrada') {
+            toast.info(`Mesa ${changedTable.number} cerrada`);
+          } else if (changedTable.status === 'DatosEnviados') {
+            toast.info(`Mesa ${changedTable.number} - Datos enviados`);
+          }
+        }
+      }
+    },
+  });
+  if (loading) return <span className='loader'></span>;
   if (error) return <p>Error...</p>;
 
-  const intendencia = JSON.parse(data.factionChartJS).filter((f) => {
-    return f.position === "intendencia";
+  // Add null checks and safe parsing
+  const factionData = data?.factionChartJS
+    ? JSON.parse(data.factionChartJS)
+    : [];
+
+  const intendencia = factionData.filter((f) => {
+    return f.position === 'intendencia';
   });
-  const gobernacion = JSON.parse(data.factionChartJS).filter((f) => {
-    return f.position === "gobernacion";
+  const gobernacion = factionData.filter((f) => {
+    return f.position === 'gobernacion';
   });
-  const presidencia = JSON.parse(data.factionChartJS).filter((f) => {
-    return f.position === "presidencia";
+  const presidencia = factionData.filter((f) => {
+    return f.position === 'presidencia';
   });
 
   const totalIntendenciaVotes = intendencia.reduce(
@@ -123,119 +148,133 @@ export function Escrutinio() {
   totalIntendenciaVotes > 0 && calculateSeats();
 
   intendencia.sort(function (a, b) {
-    return a.name == "Blancos" ? 1 : 0;
+    return a.name == 'Blancos' ? 1 : 0;
   });
   gobernacion.sort(function (a, b) {
-    return a.name == "Blancos" ? 1 : 0;
+    return a.name == 'Blancos' ? 1 : 0;
   });
   presidencia.sort(function (a, b) {
-    return a.name == "Blancos" ? 1 : 0;
+    return a.name == 'Blancos' ? 1 : 0;
   });
 
   return (
-    <div className="flex flex-col gap-10 justify-evenly text-center">
-      <div className="text-5xl text-center py-4 underline underline-offset-8">
+    <div className='flex flex-col gap-10 justify-evenly text-center'>
+      <div className='text-5xl text-center py-4 underline underline-offset-8'>
         Escrutinio
       </div>
       <div>
-        <h2 className="text-4xl mb-3">Intendencia</h2>
+        <h2 className='text-4xl mb-3'>Municipio</h2>
         {intendencia.map((candidato, index) => {
           return (
             <div
               key={index}
-              className="flex flex-col md:flex-row gap justify-evenly items-center w-full"
+              className='flex flex-col md:flex-row gap justify-evenly items-center w-full'
             >
-              <div className="md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold">
+              <div className='md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold'>
                 {candidato.name}
               </div>
-              <div className="relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-slate-600">
+              <div className='relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
                 <div
-                  className="h-full transition-all"
+                  className='h-full transition-all'
                   style={{
                     backgroundColor: `${candidato.color}`,
                     width: `${
-                      candidato.percentage == "NaN" ? "0" : candidato.percentage
+                      candidato.percentage == 'NaN' ? '0' : candidato.percentage
                     }%`,
                   }}
                 />
-                <span className="absolute right-2 -translate-y-1/2 text-white text-xl font-bold top-1/2">
+                <div className='absolute right-2 text-white text-xl font-bold top-0'>
                   {candidato.votes}
-                  {" - "}
-                  {candidato.percentage == "NaN" ? "0" : candidato.percentage}%
-                </span>
+                  {' - '}
+                  {candidato.percentage == 'NaN' ? '0' : candidato.percentage}%
+                </div>
               </div>
-              {candidato.name != "Blancos" &&
-              data.tables.find((e) => !e.factions.length) == undefined ? (
-                <div className="w-2/12 text-xl">
-                  Escaños: {candidato.seats} / {seats}
+              {candidato.name != 'Blancos' &&
+              data?.tables?.find((e) => !e.factions?.length) == undefined ? (
+                <div className='w-2/12 text-xl'>
+                  Escaños: {candidato.seats || 0} / {seats}
                 </div>
               ) : (
-                <div className="w-2/12" />
+                <div className='w-2/12' />
               )}
             </div>
           );
         })}
       </div>
       <div>
-        <h2 className="text-4xl mb-3">Gobernación</h2>
+        <h2 className='text-4xl mb-3'>Provincia</h2>
         {gobernacion.map((candidato, index) => {
           return (
             <div
               key={index}
-              className="flex flex-col md:flex-row gap justify-evenly items-center w-full"
+              className='flex flex-col md:flex-row gap justify-evenly items-center w-full'
             >
-              <div className="md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold">
+              <div className='md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold'>
                 {candidato.name}
               </div>
-              <div className="relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-slate-600">
+              <div className='relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
                 <div
-                  className="h-full transition-all"
+                  className='h-full transition-all'
                   style={{
                     backgroundColor: `${candidato.color}`,
                     width: `${
-                      candidato.percentage == "NaN" ? "0" : candidato.percentage
+                      candidato.percentage == 'NaN' ? '0' : candidato.percentage
                     }%`,
                   }}
                 />
-                <span className="absolute right-2 -translate-y-1/2 text-white text-xl font-bold top-1/2">
+                <div className='absolute right-2 text-white text-xl font-bold top-0'>
                   {candidato.votes}
-                  {" - "}
-                  {candidato.percentage == "NaN" ? "0" : candidato.percentage}%
-                </span>
+                  {' - '}
+                  {candidato.percentage == 'NaN' ? '0' : candidato.percentage}%
+                </div>
               </div>
-              <div className="w-2/12"></div>
+              {candidato.name != 'Blancos' &&
+              data?.tables?.find((e) => !e.factions?.length) == undefined ? (
+                <div className='w-2/12 text-xl'>
+                  Escaños: {candidato.seats || 0} / {seats}
+                </div>
+              ) : (
+                <div className='w-2/12' />
+              )}
             </div>
           );
         })}
       </div>
       <div>
-        <h2 className="text-4xl mb-3">Presidencia</h2>
+        <h2 className='text-4xl mb-3'>Nación</h2>
         {presidencia.map((candidato, index) => {
           return (
             <div
               key={index}
-              className="flex flex-col md:flex-row gap justify-evenly items-center w-full"
+              className='flex flex-col md:flex-row gap justify-evenly items-center w-full'
             >
-              <div className="md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold">
+              <div className='md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold'>
                 {candidato.name}
               </div>
-              <div className="relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-slate-600">
+              <div className='relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
                 <div
-                  className="h-full transition-all"
+                  className='h-full transition-all'
                   style={{
                     backgroundColor: `${candidato.color}`,
                     width: `${
-                      candidato.percentage == "NaN" ? "0" : candidato.percentage
+                      candidato.percentage == 'NaN' ? '0' : candidato.percentage
                     }%`,
                   }}
                 />
-                <span className="absolute right-2 -translate-y-1/2 text-white text-xl font-bold top-1/2">
+                <div className='absolute right-2 text-white text-xl font-bold top-0'>
                   {candidato.votes}
-                  {" - "}
-                  {candidato.percentage == "NaN" ? "0" : candidato.percentage}%
-                </span>
+                  {' - '}
+                  {candidato.percentage == 'NaN' ? '0' : candidato.percentage}%
+                </div>
               </div>
-              <div className="w-2/12"></div>
+              {candidato.name != 'Blancos' &&
+              data?.tables?.find((e) => !e.factions?.length) == undefined ? (
+                <div className='w-2/12 text-xl'>
+                  Escaños: {candidato.seats || 0} / {seats}
+                </div>
+              ) : (
+                <div className='w-2/12' />
+              )}
             </div>
           );
         })}

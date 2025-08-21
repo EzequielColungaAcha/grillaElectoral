@@ -1,10 +1,6 @@
 import React, { useContext } from 'react';
 import { AuthContext } from '../../context/authContext';
 import throttle from 'lodash.throttle';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
-
-const MySwal = withReactContent(Swal);
 
 const itemRowHeight = 184; // same height as each row (184px)
 const screenHeight = Math.max(
@@ -14,7 +10,13 @@ const screenHeight = Math.max(
 const offset = screenHeight; // We want to render more than we see, or else we will see nothing when scrolling fast
 const rowsToRender = Math.floor((screenHeight + offset) / itemRowHeight);
 
-const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
+const PersonsTableBody = ({
+  data,
+  updateVote,
+  voteLoading,
+  setShowConfirm,
+  setSelectedPerson,
+}) => {
   const { user } = useContext(AuthContext);
 
   const [displayStart, setDisplayStart] = React.useState(0);
@@ -84,44 +86,15 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
               className='h-8 group cursor-pointer'
               onClick={() => {
                 !voteLoading &&
-                  MySwal.fire({
-                    title: `Deshacer el voto de \n${row.lastName.toUpperCase()}, ${row.firstName.toUpperCase()}\nNro de Orden: ${
-                      row.order
-                    }\nDNI: ${row.dni}?`,
-                    icon: 'warning',
-                    iconColor: '#d33',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#464646',
-                    confirmButtonText: 'Deshacer',
-                    cancelButtonText: 'Cancelar',
-                    reverseButtons: true,
-                  }).then((result) => {
-                    if (result.isConfirmed) {
-                      const voteValue = row.vote == true ? false : true;
-                      updateVote({
-                        variables: {
-                          id: row._id,
-                          vote: voteValue,
-                          userName: user.name,
-                          userRol: user.rol,
-                          firstName: row.firstName,
-                          lastName: row.lastName,
-                          order: row.order,
-                          dni: row.dni,
-                          tableNumber: row.tableNumber,
-                          message: row.message,
-                          affiliate: row.affiliate,
-                          address: row.address,
-                        },
-                      });
-                    }
-                  });
+                  (() => {
+                    setSelectedPerson(row);
+                    setShowConfirm(true);
+                  })();
               }}
             >
               <td>
                 {voteLoading ? (
-                  <div className='flex flex-col animate-pulse bg-slate-700 bg-opacity-50 text-white space-y-3 px-4 py-6 rounded-lg shadow items-center cursor-default'>
+                  <div className='flex flex-col animate-pulse bg-zinc-700 bg-opacity-50 text-white space-y-3 px-4 py-6 rounded-lg shadow items-center cursor-default'>
                     <h1 className='h-12 bg-gray-300 rounded-lg w-24 dark:bg-gray-600'></h1>
 
                     <p className='w-3/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
@@ -168,23 +141,18 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
                     variables: {
                       id: row._id,
                       vote: voteValue,
-                      userName: user.name,
-                      userRol: user.rol,
-                      firstName: row.firstName,
-                      lastName: row.lastName,
-                      order: row.order,
-                      dni: row.dni,
+                      userName: user?.name || 'unknown',
+                      userRol: user?.rol || 'unknown',
                       tableNumber: row.tableNumber,
-                      message: row.message,
-                      affiliate: row.affiliate,
-                      address: row.address,
                     },
+                  }).catch((error) => {
+                    console.error('Error updating vote:', error);
                   });
               }}
             >
               <td>
                 {voteLoading ? (
-                  <div className='flex flex-col animate-pulse bg-slate-700 bg-opacity-50 text-white space-y-3 px-4 py-6 rounded-lg shadow items-center cursor-default'>
+                  <div className='flex flex-col animate-pulse bg-zinc-700 bg-opacity-50 text-white space-y-3 px-4 py-6 rounded-lg shadow items-center cursor-default'>
                     <h1 className='h-12 bg-gray-300 rounded-lg w-24 dark:bg-gray-600'></h1>
 
                     <p className='w-3/5 h-3 mt-4 bg-gray-200 rounded-lg dark:bg-gray-700'></p>
@@ -231,7 +199,7 @@ const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
     ></tr>
   );
 
-  return <tbody className='divide-y divide-slate-300'>{rows}</tbody>;
+  return <tbody>{rows}</tbody>;
 };
 
 export default PersonsTableBody;

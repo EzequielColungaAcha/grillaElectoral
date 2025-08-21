@@ -1,7 +1,7 @@
 {
   "name": "grilla-server",
   "private": true,
-  "version": "2024",
+  "version": "2025",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -27,9 +27,6 @@
     "uuid": "^9.0.0",
     "winston": "^3.11.0",
     "ws": "^8.13.0"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.22"
   },
   "packageManager": "pnpm@10.15.0"
 }

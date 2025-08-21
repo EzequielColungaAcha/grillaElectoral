@@ -1,12 +1,18 @@
-import { useQuery, useSubscription } from "@apollo/client";
-import { USERS_QUANTITY } from "../graphql/users";
-import { useNavigate } from "react-router-dom";
-import { AddUser } from "../components/admin/adminUsers/AddUser";
-import { Login } from "../components/login/Login";
-import { USER_ADDED } from "../graphql/subscription";
+import { useState } from 'react';
+import { useQuery, useSubscription } from '@apollo/client';
+import { USERS_QUANTITY } from '../graphql/users';
+import { useNavigate } from 'react-router-dom';
+import { AddUser } from '../components/admin/adminUsers/AddUser';
+import { Login } from './Login';
+import { USER_ADDED } from '../graphql/subscription';
 
 export const Register = () => {
-  const { loading, error, data, refetch } = useQuery(USERS_QUANTITY);
+  const [usersQuantity, setUsersQuantity] = useState();
+  const { loading, error, refetch } = useQuery(USERS_QUANTITY, {
+    onCompleted: (data) => {
+      setUsersQuantity(data?.usersQuantity);
+    },
+  });
 
   const navigate = useNavigate();
 
@@ -16,15 +22,15 @@ export const Register = () => {
     },
   });
 
-  if (loading) return <span className="loader"></span>;
+  if (loading) return <span className='loader'></span>;
   if (error) {
-    navigate("/");
+    navigate('/');
   }
 
-  if (data.usersQuantity == 0) {
+  if (usersQuantity === 0) {
     return (
       <div>
-        <div className="flex items-center justify-center mt-10">
+        <div className='flex items-center justify-center mt-10'>
           <AddUser firstUser={true} />
         </div>
       </div>

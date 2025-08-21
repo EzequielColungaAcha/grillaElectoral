@@ -1,87 +1,125 @@
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-import { useMutation } from "@apollo/client";
-import { CREATE_MULTIPLE_PERSONS } from "../../../../graphql/persons";
-import Papa from "papaparse";
+import { useMutation } from '@apollo/client';
+import { CREATE_MULTIPLE_PERSONS } from '../../../../graphql/persons';
+import Papa from 'papaparse';
+import { useState } from 'react';
+import { FileUploadModal } from '../../../modals/FileUploadModal';
+import { InfoModal } from '../../../modals/InfoModal';
+import { toast } from 'keep-react';
 
 export const UploadCSVButton = ({ table }) => {
-  const MySwal = withReactContent(Swal);
+  const [showInfo, setShowInfo] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
 
   const [addMultiplePersons] = useMutation(CREATE_MULTIPLE_PERSONS);
 
-  const fileHandler = async () => {
-    MySwal.fire({
-      title: "El archivo debe estar en formato .csv",
-      html: (
-        <div>
-          <p>El .csv debe estar ordenado como se muestra en la imágen ⬆️</p>
-          <p>Con las cabeceras: mesa, orden, apellido, nombre, dni y dir</p>
-          <p>Debajo, los datos, un votante por fila</p>
-          <p>
-            ❗Recomiendo usar Google Spreadsheets porque Excel no guarda las Ñ.
-          </p>
-        </div>
-      ),
-      imageUrl: "/csvFormat.png",
-      imageWidth: 720,
-      imageHeight: 200,
-      imageAlt: "csv required format",
-      showCancelButton: true,
-      reverseButtons: true,
-      confirmButtonColor: "#4d7c0f",
-      cancelButtonColor: "#464646",
-      confirmButtonText: "Siguiente",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        const { value: file } = await MySwal.fire({
-          title: `Sube el CSV para Mesa ${table.number}`,
-          input: "file",
-          inputAttributes: {
-            accept: ".csv",
-            "aria-label": `Sube el CSV para Mesa ${table.number}`,
-          },
-        });
-
-        if (file) {
-          const records = [];
-          Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            encoding: "UTF-8",
-            complete: function (results) {
-              results.data.map((row) => {
-                const person = {
-                  firstName: row.nombre.toUpperCase(),
-                  lastName: row.apellido.toUpperCase(),
-                  dni: row.dni,
-                  vote: false,
-                  order: parseInt(row.orden),
-                  address: row.dir,
-                  table: table._id,
-                  tableNumber: row.mesa,
-                  message: "",
-                  affiliate: false,
-                };
-                records.push(person);
-              });
-              addMultiplePersons({
-                variables: {
-                  data: records,
-                },
-              });
-            },
+  const handleFileSelect = async (file) => {
+    try {
+      const records = [];
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        encoding: 'UTF-8',
+        complete: function (results) {
+          results.data.map((row) => {
+            const person = {
+              firstName: row.nombre.toUpperCase(),
+              lastName: row.apellido.toUpperCase(),
+              dni: row.dni,
+              vote: false,
+              order: parseInt(row.orden),
+              address: row.dir,
+              table: table._id,
+              tableNumber: row.mesa,
+              message: '',
+              affiliate: false,
+              referer: '',
+              driver: '',
+              driver: '',
+            };
+            records.push(person);
           });
-        }
-      }
-    });
+
+          addMultiplePersons({
+            variables: {
+              data: records,
+            },
+          })
+            .then(() => {
+              toast.success('Votantes añadidos correctamente');
+            })
+            .catch(() => {
+              toast.error('Error al añadir votantes');
+            });
+        },
+      });
+    } catch (error) {
+      toast.error('Error al procesar el archivo');
+    }
+    setShowUpload(false);
+  };
+
+  const handleShowInfo = () => {
+    setShowInfo(true);
   };
 
   return (
-    <button
-      onClick={fileHandler}
-      className="bg-gray-500 py-2 px-5 hover:bg-gray-400"
-    >
-      Añadir votantes
-    </button>
+    <>
+      <button
+        onClick={handleShowInfo}
+        className='bg-gray-500 py-2 px-5 hover:bg-gray-400'
+      >
+        Añadir votantes
+      </button>
+
+      <InfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        title='Formato de archivo CSV'
+      >
+        <div className='space-y-3'>
+          <img
+            src='/csvFormat.png'
+            alt='Formato CSV requerido'
+            className='w-full max-w-md mx-auto rounded border'
+          />
+          <div className='text-sm space-y-2'>
+            <p>
+              El archivo CSV debe estar ordenado como se muestra en la imagen.
+            </p>
+            <p>
+              <strong>Cabeceras requeridas:</strong> mesa, orden, apellido,
+              nombre, dni, dir
+            </p>
+            <p>
+              Debajo de las cabeceras, los datos de cada votante en una fila.
+            </p>
+            <p className='text-orange-600'>
+              ❗ Recomiendo usar Google Spreadsheets porque Excel no guarda las
+              Ñ correctamente.
+            </p>
+          </div>
+          <div className='flex justify-end pt-4'>
+            <button
+              onClick={() => {
+                setShowInfo(false);
+                setShowUpload(true);
+              }}
+              className='px-4 py-2 bg-green-800 text-white rounded hover:bg-green-900'
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      </InfoModal>
+
+      <FileUploadModal
+        isOpen={showUpload}
+        onClose={() => setShowUpload(false)}
+        onFileSelect={handleFileSelect}
+        title={`Subir CSV para Mesa ${table.number}`}
+        description='Selecciona el archivo CSV con los datos de los votantes.'
+        acceptedTypes='.csv'
+      />
+    </>
   );
 };

@@ -65,6 +65,18 @@ export const UPDATE_PERSON = gql`
     $address: String
     $message: String
     $affiliate: Boolean
+    $referer: String
+    $driver: String
+    $originalFirstName: String
+    $originalLastName: String
+    $originalDni: String
+    $originalVote: Boolean
+    $originalOrder: Int
+    $originalAddress: String
+    $originalMessage: String
+    $originalAffiliate: Boolean
+    $originalReferer: String
+    $originalDriver: String
   ) {
     updatePerson(
       _id: $id
@@ -76,6 +88,18 @@ export const UPDATE_PERSON = gql`
       address: $address
       message: $message
       affiliate: $affiliate
+      referer: $referer
+      driver: $driver
+      originalFirstName: $originalFirstName
+      originalLastName: $originalLastName
+      originalDni: $originalDni
+      originalVote: $originalVote
+      originalOrder: $originalOrder
+      originalAddress: $originalAddress
+      originalMessage: $originalMessage
+      originalAffiliate: $originalAffiliate
+      originalReferer: $originalReferer
+      originalDriver: $originalDriver
     ) {
       _id
     }
@@ -86,13 +110,6 @@ export const UPDATE_VOTE = gql`
   mutation (
     $id: ID!
     $vote: Boolean
-    $firstName: String
-    $lastName: String
-    $dni: String
-    $order: Int
-    $address: String
-    $message: String
-    $affiliate: Boolean
     $userName: String
     $userRol: String
     $tableNumber: Int
@@ -100,19 +117,16 @@ export const UPDATE_VOTE = gql`
     updatePerson(
       _id: $id
       vote: $vote
-      firstName: $firstName
-      lastName: $lastName
-      dni: $dni
-      order: $order
-      address: $address
-      message: $message
-      affiliate: $affiliate
       userName: $userName
       userRol: $userRol
       tableNumber: $tableNumber
     ) {
       _id
       vote
+      firstName
+      lastName
+      tableNumber
+      order
     }
   }
 `;
@@ -135,21 +149,95 @@ export const UPDATE_AFFILIATE_PERSONS = gql`
   }
 `;
 
+export const GET_PERSONS_PAGINATED = gql`
+  query PersonsPaginated(
+    $limit: Int
+    $offset: Int
+    $tableNumber: Int
+    $search: String
+    $vote: Boolean
+    $affiliate: Boolean
+  ) {
+    persons(
+      limit: $limit
+      offset: $offset
+      tableNumber: $tableNumber
+      search: $search
+      vote: $vote
+      affiliate: $affiliate
+    ) {
+      persons {
+        _id
+        address
+        affiliate
+        dni
+        firstName
+        lastName
+        message
+        order
+        vote
+        referer
+        driver
+        tableNumber
+      }
+      totalCount
+      hasMore
+    }
+  }
+`;
+
+export const GET_PERSONS_COUNT = gql`
+  query PersonsCount(
+    $tableNumber: Int
+    $search: String
+    $vote: Boolean
+    $affiliate: Boolean
+  ) {
+    personsCount(
+      tableNumber: $tableNumber
+      search: $search
+      vote: $vote
+      affiliate: $affiliate
+    )
+  }
+`;
+
+export const GET_TABLES_WITH_COUNTS = gql`
+  query TablesWithCounts {
+    tablesWithCounts {
+      _id
+      number
+      description
+      status
+      totalPersons
+      voted
+      factionsCount
+    }
+  }
+`;
+
+// # Keep the old query for backward compatibility but mark as deprecated
 export const GET_PERSONS = gql`
   query Persons {
-    persons {
-      _id
-      address
-      affiliate
-      dni
-      firstName
-      lastName
-      message
-      order
-      vote
-      tableNumber
+    persons(limit: 1000, offset: 0) {
+      persons {
+        _id
+        address
+        affiliate
+        dni
+        firstName
+        lastName
+        message
+        order
+        vote
+        referer
+        driver
+        tableNumber
+      }
+      totalCount
+      hasMore
     }
-    tables {
+    tablesWithCounts {
       _id
       number
       totalPersons
