@@ -58,8 +58,6 @@ CITY=X
 CLIENT=https://${CITY}.grillaelectoral.com
 # Client Port Production
 CLIENT_PORT=80
-# Server URL Production
-IPCONFIG=https://${CITY}.server.grillaelectoral.com
 
 
 #Development
@@ -68,8 +66,6 @@ IPCONFIG=https://${CITY}.server.grillaelectoral.com
 # CLIENT=http://localhost
 # Client Port Development
 # CLIENT_PORT=8000
-# Server URL Development
-# IPCONFIG=http://localhost:8000
 
 # ---------------------------
 

@@ -29,7 +29,7 @@ export const UploadCSVButton = ({ table }) => {
               order: parseInt(row.orden),
               address: row.dir,
               table: table._id,
-              tableNumber: row.mesa,
+              tableNumber: table.number,
               message: '',
               affiliate: false,
               referer: '',

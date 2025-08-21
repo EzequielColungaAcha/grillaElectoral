@@ -32,10 +32,9 @@ import { Estado } from './pages/Estado.jsx';
 import { Escrutinio } from './pages/Escrutinio.jsx';
 import { AdminLogs } from './pages/AdminLogs.jsx';
 
-// const MONGODB_URI = '/graphql';
-const MONGODB_URI = 'http://localhost:4000/graphql';
-// const MONGODB_URI_WS = window.location.origin.replace(/^http/, 'ws') + MONGODB_URI;
-const MONGODB_URI_WS = MONGODB_URI.replace(/^http/, 'ws');
+const MONGODB_URI = '/graphql';
+const MONGODB_URI_WS =
+  window.location.origin.replace(/^http/, 'ws') + MONGODB_URI;
 
 const httpLink = new HttpLink({
   uri: MONGODB_URI,
