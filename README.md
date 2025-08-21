@@ -1,84 +1,87 @@
 # Grilla Electoral
 
-## To Do
+Esta aplicación es utilizada para hacer seguimiento de los sufragios y las actividades que conlleva una elección.
+Está pensada para ser utilizada por fiscales, prensa, usuarios en las HQ de cada partido y administradores.
+Cada usuario tiene su rol, lo que dará acceso a diferentes partes de la aplicación.
 
-- Logs
-
-## .env
-
-```env
-# Client URL
-CLIENT=https://X.grillaelectoral.com
-# Client URL Port, only localhost. Deploy use NGINX Proxy
-CLIENT_PORT=8000
-# Server URL
-IPCONFIG=https://X.server.grillaelectoral.com
-# Server URL Port, only localhost. Deploy use NGINX Proxy
-SERVER_PORT=4008
-# Seats renew (cantidad de Concejales a renovar)
-SEATS=3
-# Threshold que se utiliza en las paso para saber si una lista no va a generales.
-THRESHOLD=0
-```
+Para lograr deployarla se recomienda tener un servidor con Nginx para hacer reverse proxy.
+En una instancia se puede deployar solo este compose que contiene cliente, servidor y base de datos.
+El cliente es lo único expuesto al exterior, ya que la api recibe los request por la url del cliente y la base de datos se conecta internamente con la api.
 
 ## docker-compose.yml
 
 ```yaml
-version: '3.8'
 services:
   client:
-    build: ./grillaClient/.
+    build:
+      context: ./grillaClient
+      args:
+        VITE_SEATS: ${SEATS}
+        VITE_THRESHOLD: ${THRESHOLD}
+        VITE_HASH_BROWSER: ${HASH_BROWSER}
     ports:
-      - ${CLIENT_PORT}:4173
-    environment:
-      - VITE_SEATS=${SEATS}
-      - VITE_THRESHOLD=${THRESHOLD}
+      - '${CLIENT_PORT}:80'
+    depends_on:
+      - server
+
   server:
-    build: ./grillaServer/.
-    ports:
-      - ${SERVER_PORT}:4000
-    links:
-      - monguito
+    build: ./grillaServer
+    expose:
+      - '4000'
     environment:
       - MONGODB_URI=mongodb://ezziel:fawst@monguito:27017
+      - NODE_ENV=production
+    depends_on:
+      - monguito
+
   monguito:
-    image: mongo
+    image: mongo:latest
     environment:
       - MONGO_INITDB_ROOT_USERNAME=ezziel
       - MONGO_INITDB_ROOT_PASSWORD=fawst
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
 ```
 
-## Docker create
+## .env
 
-- Network
+```env
+# CITY indica la ciudad de la URL que usara la app.
+CITY=X
 
-  - Primero creamos la red con `docker network create ciudad`
+# Production
 
-- Client
+# Client URL Production
+CLIENT=https://${CITY}.grillaelectoral.com
+# Client Port Production
+CLIENT_PORT=80
+# Server URL Production
+IPCONFIG=https://${CITY}.server.grillaelectoral.com
 
-  - docker create -p 80:4173 --name client --network _ciudad_ -e VITE*IPCONFIG=\_IP_A_LA_QUE_APUNTE*/graphql -e VITE*EXPORT=\_IP_A_LA_QUE_APUNTE* ezziel/grilla:client
 
-- Server
+#Development
 
-  - docker create -p 4000:4000 --name server --network _ciudad_ -e MONGODB*URI=\_URI_A_LA_QUE_APUNTE* ezziel/grilla:server
+# Client URL Development
+# CLIENT=http://localhost
+# Client Port Development
+# CLIENT_PORT=8000
+# Server URL Development
+# IPCONFIG=http://localhost:8000
 
-- Mongo
+# ---------------------------
 
-  - docker create --name monguito --network _ciudad_ -e MONGO*INITDB_ROOT_USERNAME=\_USER* -e MONGO*INITDB_ROOT_PASSWORD=\_PASSWORD* mongo
+# Server URL Port, only localhost. Deploy use NGINX Proxy
+SERVER_PORT=8000
 
-## ENV
+# Seats renew (cantidad de Concejales a renovar)
+SEATS=3
 
-- Client
+# Threshold que se utiliza en las paso para saber si una lista no va a generales.
+THRESHOLD=0
 
-- Server
-
-  - NODE_ENV: por defecto "production", esto evita que se muestre el playground de Graphql. Colocar cualquier otra cosa si se quiere habilitar el playground.
-
-  - MONGODB_URI: por defecto "mongodb://ezziel:fawst@monguito:27017", colocar la dirección que apunte a la base de datos de mongo.
-    Ejemplo de URI: mongodb://USER:PASSWORD@CONTAINER_NAME:PORT
-
-- Mongo
-
-  - MONGO*INITDB_ROOT_USERNAME: dar un nombre de usuario a la base de datos, ejemplo mongodb://\*\*\_ezziel*\*\*:fawst@monguito:27017
-
-  - MONGO*INITDB_ROOT_PASSWORD: dar una contraseña a la base de datos, ejemplo mongodb://ezziel:\*\*\_fawst*\*\*@monguito:27017
+# Used by react-router to know if the browser should use '#/' or '/' in the URL. If true it will use '#/'.
+HASH_BROWSER=false
+```
