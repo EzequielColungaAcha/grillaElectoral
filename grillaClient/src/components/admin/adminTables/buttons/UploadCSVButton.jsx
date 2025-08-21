@@ -34,7 +34,6 @@ export const UploadCSVButton = ({ table }) => {
               affiliate: false,
               referer: '',
               driver: '',
-              driver: '',
             };
             records.push(person);
           });

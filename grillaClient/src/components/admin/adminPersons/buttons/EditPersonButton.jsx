@@ -37,7 +37,6 @@ export const EditPersonButton = ({ person }) => {
           originalAffiliate: person.affiliate,
           originalReferer: person.referer,
           originalDriver: person.driver,
-          driver: formData.driver,
         },
       });
 

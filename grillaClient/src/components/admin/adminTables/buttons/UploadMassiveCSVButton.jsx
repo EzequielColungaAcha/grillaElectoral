@@ -39,7 +39,6 @@ export const UploadMassiveCSVButton = ({ refetch, datos, affiliateList }) => {
               affiliate: affiliateList.includes(row.dni) ? true : false,
               referer: '',
               driver: '',
-              driver: '',
             };
             records.push(person);
           });
