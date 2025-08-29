@@ -20,6 +20,17 @@ export const ADD_USER = gql`
   }
 `;
 
+export const UPDATE_USER_TABLE_ASSIGNMENT = gql`
+  mutation ($id: ID!, $assignedTableId: ID) {
+    updateUserTableAssignment(_id: $id, assignedTableId: $assignedTableId) {
+      _id
+      assignedTable {
+        _id
+        number
+      }
+    }
+  }
+`;
 export const GET_USERS = gql`
   query getUsers {
     users {
@@ -27,6 +38,10 @@ export const GET_USERS = gql`
       username
       name
       rol
+      assignedTable {
+        _id
+        number
+      }
     }
   }
 `;

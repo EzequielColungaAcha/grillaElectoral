@@ -19,6 +19,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    assignedTableId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Table',
+      required: false,
+    },
     token: {
       type: String,
     },

@@ -39,6 +39,16 @@ export const resolvers = {
       return await Table.find().sort({ number: 1 });
     },
 
+    tablesForFiscal: async (_, { tableId }) => {
+      if (tableId) {
+        // Return only the assigned table
+        const table = await Table.findById(tableId);
+        return table ? [table] : [];
+      } else {
+        // Return all tables for Fiscal General
+        return await Table.find().sort({ number: 1 });
+      }
+    },
     tablesWithCounts: async () => {
       const tables = await Table.aggregate([
         {
@@ -398,7 +408,7 @@ export const resolvers = {
     // * Mutation for Auth Register
     registerUser: async (
       _,
-      { registerInput: { username, name, password, rol } },
+      { registerInput: { username, name, password, rol, assignedTableId } },
       context
     ) => {
       const oldUser = await User.findOne({ username });
@@ -410,6 +420,7 @@ export const resolvers = {
         username,
         name,
         rol,
+        assignedTableId: assignedTableId || null,
         password: encryptedPassword,
       });
       const token = Jwt.sign(
@@ -443,8 +454,64 @@ export const resolvers = {
       return savedUser;
     },
 
+    updateUserTableAssignment: async (_, { _id, assignedTableId }, context) => {
+      // Get the old user data before update for logging
+      const oldUser = await User.findById(_id).populate('assignedTableId');
+
+      const updatedUser = await User.findByIdAndUpdate(
+        _id,
+        { assignedTableId: assignedTableId || null },
+        { new: true }
+      ).populate('assignedTableId');
+
+      if (!updatedUser) throw new Error('User not found');
+
+      // Create the user object with proper assignedTable structure
+      const userWithTable = {
+        ...updatedUser.toObject(),
+        assignedTable: updatedUser.assignedTableId
+          ? {
+              _id: updatedUser.assignedTableId._id,
+              number: updatedUser.assignedTableId.number,
+            }
+          : null,
+      };
+
+      const user = context?.user || {
+        username: 'system',
+        name: 'system',
+        rol: 'system',
+      };
+
+      // Prepare the changes object with before/after values
+      const changes = {
+        assignedTable: {
+          old: oldUser?.assignedTableId
+            ? `Mesa ${oldUser.assignedTableId.number}`
+            : 'Fiscal General (todas las mesas)',
+          new: updatedUser.assignedTableId
+            ? `Mesa ${updatedUser.assignedTableId.number}`
+            : 'Fiscal General (todas las mesas)',
+        },
+      };
+
+      logUserAction(
+        'USER_TABLE_ASSIGNMENT_UPDATED',
+        user,
+        updatedUser,
+        changes
+      );
+
+      // Publish subscription for table assignment change
+      await pubsub.publish('USER_TABLE_ASSIGNMENT_UPDATED', {
+        userTableAssignmentUpdated: userWithTable,
+      });
+
+      return userWithTable;
+    },
+
     loginUser: async (_, { loginInput: { username, password } }) => {
-      const user = await User.findOne({ username });
+      const user = await User.findOne({ username }).populate('assignedTableId');
       if (user && (await bcrypt.compare(password, user.password))) {
         const token = Jwt.sign(
           {
@@ -452,6 +519,12 @@ export const resolvers = {
             username,
             name: user.name,
             rol: user.rol,
+            assignedTable: user.assignedTableId
+              ? {
+                  _id: user.assignedTableId._id,
+                  number: user.assignedTableId.number,
+                }
+              : null,
           },
           'UNFASE_STRINGYFIED',
           {
@@ -1145,6 +1218,12 @@ export const resolvers = {
       return await Table.findById(parent.tableId).lean();
     },
   },
+  User: {
+    assignedTable: async (parent) => {
+      if (!parent.assignedTableId) return null;
+      return await Table.findById(parent.assignedTableId).lean();
+    },
+  },
   Faction: {
     config: async (parent) =>
       await FactionConfig.findById(parent.configId).lean(),
@@ -1199,6 +1278,9 @@ export const resolvers = {
     },
     userDeleted: {
       subscribe: () => pubsub.asyncIterator('USER_DELETED'),
+    },
+    userTableAssignmentUpdated: {
+      subscribe: () => pubsub.asyncIterator('USER_TABLE_ASSIGNMENT_UPDATED'),
     },
     factionDeleted: {
       subscribe: () => pubsub.asyncIterator('FACTION_DELETE'),

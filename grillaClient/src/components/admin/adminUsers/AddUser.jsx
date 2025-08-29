@@ -1,6 +1,8 @@
 import { useMutation } from '@apollo/client';
 import { ImUserPlus } from 'react-icons/im';
 import { ADD_USER } from '../../../graphql/users';
+import { GET_TABLES } from '../../../graphql/tables';
+import { useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { FormModal } from '../../modals/FormModal';
 import { toast } from 'keep-react';
@@ -11,6 +13,7 @@ export const AddUser = ({ firstUser }) => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const { data: tablesData } = useQuery(GET_TABLES);
   const [addUser] = useMutation(ADD_USER);
 
   const handleSubmit = async (formData) => {
@@ -23,6 +26,12 @@ export const AddUser = ({ firstUser }) => {
             name: formData.name,
             password: formData.password,
             rol: firstUser ? 'admin' : formData.rol,
+            assignedTableId:
+              formData.rol === 'fiscal' &&
+              formData.assignedTableId &&
+              formData.assignedTableId !== 'none'
+                ? formData.assignedTableId
+                : null,
           },
         },
       });
@@ -50,18 +59,54 @@ export const AddUser = ({ firstUser }) => {
         { value: 'admin', label: 'Admin' },
       ];
 
-  const formFields = [
-    { name: 'username', label: 'Usuario', type: 'text', required: true },
-    { name: 'name', label: 'Apellido y Nombre', type: 'text', required: true },
-    { name: 'password', label: 'Contraseña', type: 'password', required: true },
-    {
-      name: 'rol',
-      label: 'Permisos',
-      type: 'select',
-      options: roleOptions,
-      required: true,
-    },
-  ];
+  const createFormFields = () => {
+    const baseFields = [
+      { name: 'username', label: 'Usuario', type: 'text', required: true },
+      {
+        name: 'name',
+        label: 'Apellido y Nombre',
+        type: 'text',
+        required: true,
+      },
+      {
+        name: 'password',
+        label: 'Contraseña',
+        type: 'password',
+        required: true,
+      },
+      {
+        name: 'rol',
+        defaultValue: 'fiscal',
+        label: 'Permisos',
+        type: 'select',
+        options: roleOptions,
+        required: true,
+      },
+    ];
+
+    // Add table assignment field for fiscal users (only if not firstUser)
+    if (!firstUser && tablesData?.tables) {
+      const tableOptions = [
+        { value: '', label: 'Fiscal General (todas las mesas)' },
+        ...tablesData.tables.map((table) => ({
+          value: table._id,
+          label: `Mesa ${table.number}${
+            table.description ? ` - ${table.description}` : ''
+          }`,
+        })),
+      ];
+
+      baseFields.push({
+        name: 'assignedTableId',
+        label: 'Mesa Asignada (solo para Fiscales)',
+        type: 'select',
+        options: tableOptions,
+        required: false,
+      });
+    }
+
+    return baseFields;
+  };
 
   return (
     <>
@@ -77,7 +122,7 @@ export const AddUser = ({ firstUser }) => {
         onClose={() => setShowModal(false)}
         onSubmit={handleSubmit}
         title='Añadir Usuario'
-        fields={formFields}
+        fields={createFormFields()}
         loading={loading}
         submitText='Crear'
       />

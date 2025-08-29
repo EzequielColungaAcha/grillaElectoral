@@ -1,4 +1,5 @@
 import { DeleteUserButton } from "./buttons/DeleteUserButton";
+import { AssignTableButton } from "./buttons/AssignTableButton";
 
 export const AdminUsersCard = (userD) => {
   return (
@@ -14,8 +15,18 @@ export const AdminUsersCard = (userD) => {
           <h2 className="text-xl font-medium">
             Rol: <span className="capitalize">{userD.userD.rol}</span>
           </h2>
+          {userD.userD.rol === 'fiscal' && (
+            <h2 className="text-xl font-medium">
+              Mesa Asignada: {userD.userD.assignedTable ? 
+                `Mesa ${userD.userD.assignedTable.number}` : 
+                'Fiscal General (todas las mesas)'}
+            </h2>
+          )}
         </div>
         <div className="flex gap-5 h-fit">
+          {userD.userD.rol === 'fiscal' && (
+            <AssignTableButton userD={userD.userD} />
+          )}
           <DeleteUserButton userD={userD.userD} />
         </div>
       </div>

@@ -16,6 +16,21 @@ export const GET_TABLES = gql`
   }
 `;
 
+export const GET_TABLES_FOR_FISCAL = gql`
+  query getTablesForFiscal($tableId: ID) {
+    tables: tablesForFiscal(tableId: $tableId) {
+      _id
+      number
+      description
+      status
+      voted
+      totalPersons
+      factions {
+        _id
+      }
+    }
+  }
+`;
 export const GET_RADIO_TABLES = gql`
   query getTables {
     tables {

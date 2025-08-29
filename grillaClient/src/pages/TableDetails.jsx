@@ -6,6 +6,7 @@ import {
   TABLE_CHANGED,
   PERSON_ADDED,
   PERSON_DELETED,
+  USER_TABLE_ASSIGNMENT_UPDATED,
 } from '../graphql/subscription.js';
 import { PersonFormModal } from '../components/form/ReactHookForm.jsx';
 import {
@@ -17,9 +18,14 @@ import { StatusDatosEnviados } from '../components/tables/tableDetails/StatusDat
 import PersonsTable from '../components/persons/PersonsTable.jsx';
 import { Hash } from 'phosphor-react';
 import { InputIcon, Input } from 'keep-react';
+import { AuthContext } from '../context/authContext.jsx';
+import { useContext } from 'react';
 
 export function TableDetails() {
   const params = useParams();
+  const navigate = useNavigate();
+  const { user, updateUser } = useContext(AuthContext);
+  const hashBrowser = import.meta.env.VITE_HASH_BROWSER;
 
   const { data, loading, error, refetch } = useQuery(GET_TABLE, {
     variables: {
@@ -42,7 +48,39 @@ export function TableDetails() {
 
   const { data: tableChanged } = useSubscription(TABLE_CHANGED);
 
-  const navigate = useNavigate();
+  // Subscribe to user table assignment updates
+  const { data: userTableAssignmentUpdated } = useSubscription(
+    USER_TABLE_ASSIGNMENT_UPDATED,
+    {
+      onData: (data) => {
+        const updatedUser = data.data.data.userTableAssignmentUpdated;
+
+        if (updatedUser && user && updatedUser._id === user.user_id) {
+          // Update the user data in context
+          updateUser({
+            assignedTable: updatedUser.assignedTable,
+          });
+
+          // Check if user should be redirected
+          if (user.rol === 'fiscal') {
+            if (updatedUser.assignedTable) {
+              // User has assigned table - check if they're on the wrong table
+              if (updatedUser.assignedTable._id !== params.id) {
+                const tableUrl = `${hashBrowser === 'true' ? '#/' : '/'}mesas/${
+                  updatedUser.assignedTable._id
+                }`;
+                navigate(tableUrl, { replace: true });
+              }
+            } else {
+              // User became Fiscal General - redirect to all tables
+              const tablesUrl = `${hashBrowser === 'true' ? '#/' : '/'}mesas`;
+              navigate(tablesUrl, { replace: true });
+            }
+          }
+        }
+      },
+    }
+  );
 
   const [search, setSearch] = useState('');
 

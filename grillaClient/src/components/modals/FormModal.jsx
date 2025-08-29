@@ -34,13 +34,13 @@ export const FormModal = ({
           field.options &&
           field.options.length > 0
         ) {
-          initialData[field.name] = field.options[0].value;
+          initialData[field.name] = field.options[0].value || 'none';
         } else if (field.type === 'number') {
           initialData[field.name] = 0;
         } else if (field.type === 'color') {
           initialData[field.name] = '#ffffff';
         } else {
-          initialData[field.name] = '';
+          initialData[field.name] = field.type === 'select' ? 'none' : '';
         }
       });
       setFormData(initialData);
@@ -65,9 +65,18 @@ export const FormModal = ({
     const completeFormData = {};
     fields.forEach((field) => {
       if (formData[field.name] !== undefined) {
-        completeFormData[field.name] = formData[field.name];
+        // Convert 'none' back to appropriate values for submission
+        let value = formData[field.name];
+        if (field.type === 'select' && value === 'none') {
+          value = field.allowEmpty ? '' : null;
+        }
+        completeFormData[field.name] = value;
       } else if (field.defaultValue !== undefined) {
-        completeFormData[field.name] = field.defaultValue;
+        let value = field.defaultValue;
+        if (field.type === 'select' && value === 'none') {
+          value = field.allowEmpty ? '' : null;
+        }
+        completeFormData[field.name] = value;
       } else if (field.required) {
         // For required fields without values, use appropriate defaults
         if (field.type === 'number') {
@@ -77,9 +86,13 @@ export const FormModal = ({
           field.options &&
           field.options.length > 0
         ) {
-          completeFormData[field.name] = field.options[0].value;
+          let value = field.options[0].value;
+          if (value === 'none') {
+            value = field.allowEmpty ? '' : null;
+          }
+          completeFormData[field.name] = value;
         } else {
-          completeFormData[field.name] = '';
+          completeFormData[field.name] = field.type === 'select' ? null : '';
         }
       }
     });
@@ -94,13 +107,21 @@ export const FormModal = ({
 
     switch (type) {
       case 'select':
+        // Ensure we don't have empty string values for select options
+        const safeOptions = options?.map(option => ({
+          ...option,
+          value: option.value === '' ? 'none' : option.value
+        })) || [];
+        
+        const safeCurrentValue = currentValue === '' ? 'none' : currentValue;
+        
         return (
           <div key={name} className='space-y-2'>
             <label className='text-sm font-medium text-zinc-200'>
               {label}:
             </label>
             <Select
-              value={currentValue}
+              value={safeCurrentValue}
               onValueChange={(v) => handleInputChange(name, v)}
               {...props}
             >
@@ -110,7 +131,7 @@ export const FormModal = ({
 
               <SelectContent className='bg-zinc-800 border border-zinc-300'>
                 <SelectGroup>
-                  {options?.map((option) => (
+                  {safeOptions.map((option) => (
                     <SelectItem
                       key={option.value}
                       value={option.value}

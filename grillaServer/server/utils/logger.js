@@ -99,6 +99,8 @@ const generateLogMessage = (action, user, target, changes) => {
       return `El usuario ${username} (${userRole}) creó el usuario ${target?.identifier}`;
     case 'USER_DELETED':
       return `El usuario ${username} (${userRole}) eliminó el usuario ${target?.identifier}`;
+    case 'USER_TABLE_ASSIGNMENT_UPDATED':
+      return `El usuario ${username} (${userRole}) actualizó la asignación de mesa del usuario ${target?.identifier}`;
     case 'FACTION_CONFIG_CREATED':
       return `El usuario ${username} (${userRole}) creó el partido ${target?.identifier} para ${target?.position}`;
     case 'FACTION_CONFIG_DELETED':
@@ -155,7 +157,14 @@ export const logPersonDeleted = (user, person) => {
     id: person._id || person.id,
     identifier: `${person.lastName}, ${person.firstName} (DNI: ${person.dni})`,
     order: person.order,
-    tableNumber: person.tableNumber,
+    assignedTable: {
+      old: updatedUser.assignedTableId
+        ? `Mesa ${updatedUser.assignedTableId.number}`
+        : 'Fiscal General',
+      new: assignedTableId
+        ? `Mesa ${updatedUser.assignedTableId.number}`
+        : 'Fiscal General',
+    },
   });
 };
 

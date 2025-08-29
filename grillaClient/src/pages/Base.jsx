@@ -44,7 +44,6 @@ export const Base = () => {
   const [selectedSearch, setSelectedSearch] = useState('all');
   const [voteSearch, setVoteSearch] = useState('all');
   const [affiliateSearch, setAffiliateSearch] = useState('all');
-  const [currentPage, setCurrentPage] = useState(0);
   const [allPersons, setAllPersons] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -55,6 +54,12 @@ export const Base = () => {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [showPersonModal, setShowPersonModal] = useState(false);
   const [showEditDriverModal, setShowEditDriverModal] = useState(false);
+  const [showEditMessageModal, setShowEditMessageModal] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [dataCache, setDataCache] = useState({});
+  const [cacheKey, setCacheKey] = useState('');
+  const [loadedPages, setLoadedPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const [updatePerson] = useMutation(UPDATE_PERSON, {});
 
@@ -83,8 +88,8 @@ export const Base = () => {
   // Build query variables based on current filters
   const queryVariables = React.useMemo(() => {
     const variables = {
-      limit: selectedSearch === 'all' ? ITEMS_PER_PAGE : 10000, // Load all for specific table
-      offset: currentPage * ITEMS_PER_PAGE,
+      limit: selectedSearch === 'all' ? ITEMS_PER_PAGE : 10000,
+      offset: 0, // Always start from 0 for initial query
     };
 
     // If there's a person search, ignore all other filters and search through all data
@@ -102,9 +107,9 @@ export const Base = () => {
       variables.offset = 0; // Reset offset for specific table
     }
 
-    if (voteSearch === 'vote') {
+    if (voteSearch === 'voted') {
       variables.vote = true;
-    } else if (voteSearch === 'noVote') {
+    } else if (voteSearch === 'notVoted') {
       variables.vote = false;
     }
 
@@ -113,17 +118,11 @@ export const Base = () => {
     }
 
     return variables;
-  }, [
-    selectedSearch,
-    currentPage,
-    voteSearch,
-    affiliateSearch,
-    debouncedSearch,
-  ]);
+  }, [selectedSearch, voteSearch, affiliateSearch, debouncedSearch]);
 
-  // Main persons query with pagination
+  // Query for paginated persons data
   const {
-    data: personsData,
+    data,
     loading: dataLoading,
     error,
     refetch,
@@ -132,18 +131,17 @@ export const Base = () => {
     variables: queryVariables,
     notifyOnNetworkStatusChange: true,
     onCompleted: (data) => {
-      if (currentPage === 0 || selectedSearch !== 'all') {
-        setAllPersons(data?.persons?.persons || []);
-      } else {
-        setAllPersons((prev) => [...prev, ...(data?.persons?.persons || [])]);
-      }
-      setHasMore(data?.persons?.hasMore || false);
-      setTotalCount(data?.persons?.totalCount || 0);
+      if (data?.persons) {
+        setAllPersons(data.persons.persons);
+        setHasMore(data.persons.hasMore);
+        setTotalCount(data.persons.totalCount);
 
-      // Show "Load All" option only when "all tables" is selected and there's more data
-      setShowLoadAllOption(
-        selectedSearch === 'all' && (data?.persons?.hasMore || false)
-      );
+        // Show "Load All" option only when "all tables" is selected and there's more data
+        setShowLoadAllOption(
+          selectedSearch === 'all' && (data?.persons?.hasMore || false)
+        );
+      }
+      setIsLoadingMore(false);
     },
   });
 
@@ -152,11 +150,11 @@ export const Base = () => {
 
   // Reset pagination when filters change
   const handleFilterChange = React.useCallback(() => {
-    setCurrentPage(0);
     setAllPersons([]);
     setLoadingAll(false);
-    refetch(queryVariables);
-  }, [refetch, queryVariables]);
+    setIsLoadingMore(false);
+    refetch();
+  }, [refetch]);
 
   // Effect to refetch when debounced search changes
   React.useEffect(() => {
@@ -166,23 +164,48 @@ export const Base = () => {
 
   // Load more data
   const loadMore = React.useCallback(() => {
-    if (hasMore && !dataLoading && selectedSearch === 'all') {
-      const nextPage = currentPage + 1;
-      setCurrentPage(nextPage);
+    if (isLoadingMore || !hasMore || debouncedSearch) return;
 
-      fetchMore({
-        variables: {
-          ...queryVariables,
-          offset: nextPage * ITEMS_PER_PAGE,
-        },
-      });
-    }
+    setIsLoadingMore(true);
+    const nextOffset = allPersons.length; // Use actual data length as offset
+
+    fetchMore({
+      variables: {
+        ...queryVariables,
+        limit: ITEMS_PER_PAGE,
+        offset: nextOffset,
+      },
+      updateQuery: (prev, { fetchMoreResult }) => {
+        if (!fetchMoreResult) return prev;
+
+        // Update state directly
+        setAllPersons((prev) => [...prev, ...fetchMoreResult.persons.persons]);
+        setHasMore(fetchMoreResult.persons.hasMore);
+
+        // Return merged data for Apollo cache
+        return {
+          ...prev,
+          persons: {
+            ...prev.persons,
+            persons: [
+              ...prev.persons.persons,
+              ...fetchMoreResult.persons.persons,
+            ],
+            hasMore: fetchMoreResult.persons.hasMore,
+            totalCount: fetchMoreResult.persons.totalCount,
+          },
+        };
+      },
+    }).catch((error) => {
+      console.error('Error loading more:', error);
+      setIsLoadingMore(false);
+    });
   }, [
     hasMore,
-    dataLoading,
-    selectedSearch,
-    currentPage,
+    isLoadingMore,
+    debouncedSearch,
     fetchMore,
+    allPersons.length,
     queryVariables,
   ]);
 
@@ -211,26 +234,95 @@ export const Base = () => {
   }, []);
 
   // Handle filter changes
-  const handleTableFilterChange = React.useCallback((value) => {
-    setSelectedSearch(value);
-    setCurrentPage(0);
-    setAllPersons([]);
-    setLoadingAll(false);
-  }, []);
+  const handleTableFilterChange = React.useCallback(
+    (value) => {
+      setSelectedSearch(value);
+      const newCacheKey = `${value}-${voteSearch}-${affiliateSearch}-${debouncedSearch}`;
+      setCacheKey(newCacheKey);
 
-  const handleVoteFilterChange = React.useCallback((value) => {
-    setVoteSearch(value);
-    setCurrentPage(0);
-    setAllPersons([]);
-    setLoadingAll(false);
-  }, []);
+      // Check if we have cached data for this filter combination
+      const cachedData = dataCache[newCacheKey];
+      if (cachedData) {
+        // Use cached data immediately
+        setAllPersons(cachedData.persons);
+        setLoadedPages(cachedData.loadedPages);
+        setHasMore(cachedData.hasMore);
+        setTotalCount(cachedData.totalCount);
+        setShowLoadAllOption(value === 'all' && cachedData.hasMore);
+      } else {
+        // No cached data, reset and refetch
+        setLoadedPages(1);
+        setAllPersons([]);
+        setHasMore(true);
+        setTotalCount(0);
+        setShowLoadAllOption(false);
+      }
 
-  const handleAffiliateFilterChange = React.useCallback((value) => {
-    setAffiliateSearch(value);
-    setCurrentPage(0);
-    setAllPersons([]);
-    setLoadingAll(false);
-  }, []);
+      setLoadingAll(false);
+      setIsLoadingMore(false);
+    },
+    [dataCache, voteSearch, affiliateSearch, debouncedSearch]
+  );
+
+  const handleVoteFilterChange = React.useCallback(
+    (value) => {
+      setVoteSearch(value);
+      const newCacheKey = `${selectedSearch}-${value}-${affiliateSearch}-${debouncedSearch}`;
+      setCacheKey(newCacheKey);
+
+      // Check if we have cached data for this filter combination
+      const cachedData = dataCache[newCacheKey];
+      if (cachedData) {
+        // Use cached data immediately
+        setAllPersons(cachedData.persons);
+        setLoadedPages(cachedData.loadedPages);
+        setHasMore(cachedData.hasMore);
+        setTotalCount(cachedData.totalCount);
+        setShowLoadAllOption(selectedSearch === 'all' && cachedData.hasMore);
+      } else {
+        // No cached data, reset and refetch
+        setLoadedPages(1);
+        setAllPersons([]);
+        setHasMore(true);
+        setTotalCount(0);
+        setShowLoadAllOption(false);
+      }
+
+      setLoadingAll(false);
+      setIsLoadingMore(false);
+    },
+    [dataCache, selectedSearch, affiliateSearch, debouncedSearch]
+  );
+
+  const handleAffiliateFilterChange = React.useCallback(
+    (value) => {
+      setAffiliateSearch(value);
+      const newCacheKey = `${selectedSearch}-${voteSearch}-${value}-${debouncedSearch}`;
+      setCacheKey(newCacheKey);
+
+      // Check if we have cached data for this filter combination
+      const cachedData = dataCache[newCacheKey];
+      if (cachedData) {
+        // Use cached data immediately
+        setAllPersons(cachedData.persons);
+        setLoadedPages(cachedData.loadedPages);
+        setHasMore(cachedData.hasMore);
+        setTotalCount(cachedData.totalCount);
+        setShowLoadAllOption(selectedSearch === 'all' && cachedData.hasMore);
+      } else {
+        // No cached data, reset and refetch
+        setLoadedPages(1);
+        setAllPersons([]);
+        setHasMore(true);
+        setTotalCount(0);
+        setShowLoadAllOption(false);
+      }
+
+      setLoadingAll(false);
+      setIsLoadingMore(false);
+    },
+    [dataCache, selectedSearch, voteSearch, debouncedSearch]
+  );
 
   // Throttled refetch function to prevent excessive API calls
   const throttledRefetch = React.useCallback(() => {
@@ -294,8 +386,8 @@ export const Base = () => {
           newPerson.tableNumber === parseInt(selectedSearch);
         const matchesVoteFilter =
           voteSearch === 'all' ||
-          (voteSearch === 'vote' && newPerson.vote) ||
-          (voteSearch === 'noVote' && !newPerson.vote);
+          (voteSearch === 'voted' && newPerson.vote) ||
+          (voteSearch === 'notVoted' && !newPerson.vote);
         const matchesAffiliateFilter =
           affiliateSearch === 'all' ||
           (affiliateSearch === 'affiliate' && newPerson.affiliate);
@@ -431,6 +523,11 @@ export const Base = () => {
     setShowEditDriverModal(true);
   };
 
+  const handleEditMessage = () => {
+    setShowPersonModal(false);
+    setShowEditMessageModal(true);
+  };
+
   const handleDriverSubmit = async (formData) => {
     try {
       await updatePerson({
@@ -457,6 +554,32 @@ export const Base = () => {
     }
   };
 
+  const handleMessageSubmit = async (formData) => {
+    try {
+      await updatePerson({
+        variables: {
+          id: selectedPerson._id,
+          message: formData.message,
+          // Add other required fields to ensure proper update
+          firstName: selectedPerson.firstName,
+          lastName: selectedPerson.lastName,
+          dni: selectedPerson.dni,
+          vote: selectedPerson.vote,
+          order: selectedPerson.order,
+          address: selectedPerson.address,
+          affiliate: selectedPerson.affiliate,
+          referer: selectedPerson.referer,
+          driver: selectedPerson.driver,
+          tableNumber: selectedPerson.tableNumber,
+        },
+      });
+      toast.success('Comentario actualizado correctamente');
+      setShowEditMessageModal(false);
+    } catch (error) {
+      toast.error('Error al actualizar comentario');
+    }
+  };
+
   const canEditDriver = PRIVACY.base.includes(user?.rol);
 
   return (
@@ -480,7 +603,7 @@ export const Base = () => {
             onChange={handleSearchChange}
           />
           {isSearching && (
-            <div className='absolute right-3 top-1/2 transform -tranzinc-y-1/2 mt-1'>
+            <div className='absolute right-3 top-1/2 transform -translate-y-1/2 mt-1'>
               <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-zinc-400'></div>
             </div>
           )}
@@ -520,8 +643,8 @@ export const Base = () => {
             disabled={isPersonSearchActive}
           >
             <option value='all'>Todos los votantes</option>
-            <option value='vote'>Ya Votaron</option>
-            <option value='noVote'>Aún No Votaron</option>
+            <option value='voted'>Ya Votaron</option>
+            <option value='notVoted'>Aún No Votaron</option>
           </select>
         </div>
 
@@ -557,6 +680,32 @@ export const Base = () => {
                 onClick={() => {
                   setSearchInput('');
                   setDebouncedSearch('');
+                  const newCacheKey = `${selectedSearch}-${voteSearch}-${affiliateSearch}-`;
+                  setCacheKey(newCacheKey);
+
+                  // Check if we have cached data for this filter combination
+                  const cachedData = dataCache[newCacheKey];
+                  if (cachedData) {
+                    // Use cached data immediately
+                    setAllPersons(cachedData.persons);
+                    setLoadedPages(cachedData.loadedPages);
+                    setHasMore(cachedData.hasMore);
+                    setTotalCount(cachedData.totalCount);
+                    setShowLoadAllOption(
+                      selectedSearch === 'all' && cachedData.hasMore
+                    );
+                  } else {
+                    // No cached data, reset and refetch
+                    setLoadedPages(1);
+                    setAllPersons([]);
+                    setHasMore(true);
+                    setTotalCount(0);
+                    setShowLoadAllOption(false);
+                    // Force refetch to get fresh data
+                    setTimeout(() => refetch(), 100);
+                  }
+
+                  setIsLoadingMore(false);
                 }}
                 className='px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded'
               >
@@ -679,9 +828,19 @@ export const Base = () => {
                 </button>
               )}
             </div>
-            <div>
-              <span className='font-semibold'>Comentario:</span>{' '}
-              {selectedPerson.message || '-'}
+            <div className='flex items-center justify-between'>
+              <div>
+                <span className='font-semibold'>Comentario:</span>{' '}
+                {selectedPerson.message || '-'}
+              </div>
+              {canEditDriver && (
+                <button
+                  onClick={handleEditMessage}
+                  className='px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm'
+                >
+                  Editar Comentario
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -702,6 +861,26 @@ export const Base = () => {
             label: 'Chofer',
             type: 'text',
             defaultValue: selectedPerson?.driver || '',
+          },
+        ]}
+        submitText='Guardar'
+      />
+
+      {/* Edit Message Modal */}
+      <FormModal
+        isOpen={showEditMessageModal}
+        onClose={() => {
+          setShowEditMessageModal(false);
+          setSelectedPerson(null);
+        }}
+        onSubmit={handleMessageSubmit}
+        title='Editar Comentario'
+        fields={[
+          {
+            name: 'message',
+            label: 'Comentario',
+            type: 'text',
+            defaultValue: selectedPerson?.message || '',
           },
         ]}
         submitText='Guardar'

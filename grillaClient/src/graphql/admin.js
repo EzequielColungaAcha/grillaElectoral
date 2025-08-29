@@ -80,6 +80,10 @@ export const usersQuery = gql`
       username
       name
       rol
+      assignedTable {
+        _id
+        number
+      }
     }
   }
 `;

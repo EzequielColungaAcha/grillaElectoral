@@ -31,6 +31,7 @@ import { Export } from './pages/Export.jsx';
 import { Estado } from './pages/Estado.jsx';
 import { Escrutinio } from './pages/Escrutinio.jsx';
 import { AdminLogs } from './pages/AdminLogs.jsx';
+import { UserDataUpdater } from './components/UserDataUpdater.jsx';
 
 const MONGODB_URI = '/graphql';
 const MONGODB_URI_WS =
@@ -90,6 +91,7 @@ export const App = () => {
       <ApolloProvider client={client}>
         {import.meta.env.VITE_HASH_BROWSER === true ? (
           <HashRouter>
+            <UserDataUpdater />
             <Navbar></Navbar>
             <Routes>
               <Route path='/login' element={<Login />} />
@@ -121,7 +123,10 @@ export const App = () => {
               <Route
                 path='/mesas/:id'
                 element={
-                  <ProtectedRoute privacy={PRIVACY.mesas}>
+                  <ProtectedRoute
+                    privacy={PRIVACY.mesas}
+                    requireTableAccess={true}
+                  >
                     <TableDetails />
                   </ProtectedRoute>
                 }
@@ -169,7 +174,10 @@ export const App = () => {
               <Route
                 path='/admin/tables/:id'
                 element={
-                  <ProtectedRoute privacy={PRIVACY.admin}>
+                  <ProtectedRoute
+                    privacy={PRIVACY.admin}
+                    requireTableAccess={false}
+                  >
                     <AdminTableDetails />
                   </ProtectedRoute>
                 }
@@ -210,6 +218,7 @@ export const App = () => {
           </HashRouter>
         ) : (
           <BrowserRouter>
+            <UserDataUpdater />
             <Navbar></Navbar>
             <Routes>
               <Route path='/login' element={<Login />} />
@@ -241,7 +250,10 @@ export const App = () => {
               <Route
                 path='/mesas/:id'
                 element={
-                  <ProtectedRoute privacy={PRIVACY.mesas}>
+                  <ProtectedRoute
+                    privacy={PRIVACY.mesas}
+                    requireTableAccess={true}
+                  >
                     <TableDetails />
                   </ProtectedRoute>
                 }
@@ -289,7 +301,10 @@ export const App = () => {
               <Route
                 path='/admin/tables/:id'
                 element={
-                  <ProtectedRoute privacy={PRIVACY.admin}>
+                  <ProtectedRoute
+                    privacy={PRIVACY.admin}
+                    requireTableAccess={false}
+                  >
                     <AdminTableDetails />
                   </ProtectedRoute>
                 }

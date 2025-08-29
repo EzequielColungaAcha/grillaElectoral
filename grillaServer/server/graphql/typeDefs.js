@@ -9,6 +9,7 @@ export const typeDefs = gql`
 
     # // * Query for Table
     tables: [Table]!
+    tablesForFiscal(tableId: ID): [Table]!
     table(_id: ID!): Table!
     tablesWithCounts: [TableWithCounts]!
     tablesPaginated(
@@ -73,6 +74,7 @@ export const typeDefs = gql`
     registerUser(registerInput: RegisterInput): User
     loginUser(loginInput: LoginInput): User
     deleteUser(_id: ID!): User
+    updateUserTableAssignment(_id: ID!, assignedTableId: ID): User
     # // * ...
 
     # // * Mutation for Table
@@ -211,6 +213,7 @@ export const typeDefs = gql`
     password: String
     token: String
     rol: String
+    assignedTable: Table
   }
 
   input RegisterInput {
@@ -218,6 +221,7 @@ export const typeDefs = gql`
     name: String
     password: String
     rol: String
+    assignedTableId: ID
   }
 
   input LoginInput {
@@ -396,7 +400,7 @@ export const typeDefs = gql`
     factionConfigUpdate: FactionConfig!
     userAdded: User!
     userDeleted: User!
-    userUpdated: User!
+    userTableAssignmentUpdated: User!
     factionDeleted: [Faction]
     alert: Alert!
     dataSaved: String

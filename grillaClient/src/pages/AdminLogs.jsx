@@ -10,7 +10,6 @@ import {
   PaginationNavigator,
 } from 'keep-react';
 import {
-  Calendar,
   Funnel,
   User,
   Target,
@@ -200,6 +199,7 @@ export const AdminLogs = () => {
       VOTES_UPDATED: 'Votos Actualizados',
       USER_CREATED: 'Usuario Creado',
       USER_DELETED: 'Usuario Eliminado',
+      USER_TABLE_ASSIGNMENT_UPDATED: 'Asignación de mesa',
       FACTION_CONFIG_CREATED: 'Partido Creado',
       FACTION_CONFIG_DELETED: 'Partido Eliminado',
       FACTION_CONFIG_UPDATED: 'Partido Actualizado',
@@ -274,6 +274,15 @@ export const AdminLogs = () => {
         return `${oldStatus} → ${newStatus}`;
       }
 
+      // Table assignment changes
+      if (
+        action === 'USER_TABLE_ASSIGNMENT_UPDATED' &&
+        changes.assignedTable &&
+        changes.assignedTable.old &&
+        changes.assignedTable.new
+      ) {
+        return `${changes.assignedTable.old} → ${changes.assignedTable.new}`;
+      }
       // Vote operations
       if (
         action === 'VOTES_SENT' &&
@@ -807,6 +816,7 @@ export const AdminLogs = () => {
     { value: 'VOTES_UPDATED', label: 'Votos actualizados' },
     { value: 'USER_CREATED', label: 'Usuario creado' },
     { value: 'USER_DELETED', label: 'Usuario eliminado' },
+    { value: 'USER_TABLE_ASSIGNMENT_UPDATED', label: 'Asignación de mesa' },
     { value: 'FACTION_CONFIG_CREATED', label: 'Partido creado' },
     { value: 'FACTION_CONFIG_DELETED', label: 'Partido eliminado' },
     { value: 'FACTION_CONFIG_UPDATED', label: 'Partido actualizado' },
@@ -840,49 +850,6 @@ export const AdminLogs = () => {
                 ))}
               </select>
             </div>
-
-            {/* <div>
-              <label className='block text-sm font-medium text-zinc-300 mb-2'>
-                <Calendar size={16} className='inline mr-1' />
-                Fecha desde
-              </label>
-              <input
-                type='date'
-                value={filters.startDate}
-                onChange={(e) =>
-                  handleFilterChange('startDate', e.target.value)
-                }
-                className='w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-md text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500'
-              />
-            </div> */}
-
-            {/* <div>
-              <label className='block text-sm font-medium text-zinc-300 mb-2'>
-                <Calendar size={16} className='inline mr-1' />
-                Fecha hasta
-              </label>
-              <input
-                type='date'
-                value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                className='w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-md text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500'
-              />
-            </div> */}
-
-            {/* <div className='flex items-end gap-2'>
-              <button
-                onClick={handleApplyFilters}
-                className='px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors'
-              >
-                Aplicar
-              </button>
-              <button
-                onClick={handleClearFilters}
-                className='px-4 py-2 bg-zinc-600 hover:bg-zinc-500 text-white rounded-md transition-colors'
-              >
-                Limpiar
-              </button>
-            </div> */}
           </div>
 
           {logs.length === 0 && !loading && currentPage === 1 ? (

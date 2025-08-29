@@ -190,3 +190,18 @@ export const SAVED_DATA = gql`
     dataSaved
   }
 `;
+
+export const USER_TABLE_ASSIGNMENT_UPDATED = gql`
+  subscription {
+    userTableAssignmentUpdated {
+      _id
+      username
+      name
+      rol
+      assignedTable {
+        _id
+        number
+      }
+    }
+  }
+`;

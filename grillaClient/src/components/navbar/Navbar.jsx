@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AuthContext } from '../../context/authContext';
 import { Spin as Hamburger } from 'hamburger-react';
 import { useNavigate } from 'react-router-dom';
@@ -39,6 +39,13 @@ export default function Navbar({ fixed }) {
 
   const [navbarOpen, setNavbarOpen] = useState(false);
 
+  const mesasHref = useMemo(() => {
+    if (!user) return;
+    return user.rol === 'fiscal' && user.assignedTable
+      ? `${hashBrowser === true ? '#/' : '/'}mesas/${user.assignedTable._id}`
+      : `${hashBrowser === 'true' ? '#/' : '/'}mesas`;
+  }, [user, hashBrowser]);
+
   return user ? (
     <>
       <nav className='relative flex flex-wrap items-center justify-between px-2 bg-zinc-800 mb-1'>
@@ -69,7 +76,7 @@ export default function Navbar({ fixed }) {
                 <li className='nav-item'>
                   <a
                     className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
-                    href={`${hashBrowser === true ? '#/' : '/'}mesas`}
+                    href={mesasHref}
                   >
                     <span className='ml-2'>Mesas</span>
                   </a>

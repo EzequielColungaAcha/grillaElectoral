@@ -51,6 +51,8 @@ volumes:
 ```env
 # CITY indica la ciudad de la URL que usara la app.
 CITY=X
+# Seats renew (cantidad de Concejales a renovar)
+SEATS=3
 
 # Production
 
@@ -71,9 +73,6 @@ CLIENT_PORT=80
 
 # Server URL Port, only localhost. Deploy use NGINX Proxy
 SERVER_PORT=8000
-
-# Seats renew (cantidad de Concejales a renovar)
-SEATS=3
 
 # Threshold que se utiliza en las paso para saber si una lista no va a generales.
 THRESHOLD=0
