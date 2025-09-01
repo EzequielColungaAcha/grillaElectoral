@@ -116,7 +116,7 @@ export const EditVotesButton = ({ table }) => {
             name: `faction_${faction._id}`,
             label: `${faction.config.name} (Intendencia)`,
             type: 'number',
-            defaultValue: faction.votes,
+            defaultValue: faction.votes || '',
             min: 0,
           });
         });
@@ -132,7 +132,7 @@ export const EditVotesButton = ({ table }) => {
             name: `faction_${faction._id}`,
             label: `${faction.config.name} (Gobernación)`,
             type: 'number',
-            defaultValue: faction.votes,
+            defaultValue: faction.votes || '',
             min: 0,
           });
         });
@@ -148,7 +148,7 @@ export const EditVotesButton = ({ table }) => {
             name: `faction_${faction._id}`,
             label: `${faction.config.name} (Presidencia)`,
             type: 'number',
-            defaultValue: faction.votes,
+            defaultValue: faction.votes || '',
             min: 0,
           });
         });

@@ -107,7 +107,7 @@ export const SendVotesButton = ({ table }) => {
             name: `faction_${faction._id}`,
             label: `${faction.name} (Intendencia)`,
             type: 'number',
-            defaultValue: 0,
+            defaultValue: '',
             min: 0,
           });
         });
@@ -121,7 +121,7 @@ export const SendVotesButton = ({ table }) => {
             name: `faction_${faction._id}`,
             label: `${faction.name} (Gobernación)`,
             type: 'number',
-            defaultValue: 0,
+            defaultValue: '',
             min: 0,
           });
         });
@@ -135,7 +135,7 @@ export const SendVotesButton = ({ table }) => {
             name: `faction_${faction._id}`,
             label: `${faction.name} (Presidencia)`,
             type: 'number',
-            defaultValue: 0,
+            defaultValue: '',
             min: 0,
           });
         });
