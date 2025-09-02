@@ -17,7 +17,6 @@ services:
       context: ./grillaClient
       args:
         VITE_SEATS: ${SEATS}
-        VITE_THRESHOLD: ${THRESHOLD}
         VITE_HASH_BROWSER: ${HASH_BROWSER}
     ports:
       - '${CLIENT_PORT}:80'
@@ -74,9 +73,34 @@ CLIENT_PORT=80
 # Server URL Port, only localhost. Deploy use NGINX Proxy
 SERVER_PORT=8000
 
-# Threshold que se utiliza en las paso para saber si una lista no va a generales.
-THRESHOLD=0
-
 # Used by react-router to know if the browser should use '#/' or '/' in the URL. If true it will use '#/'.
 HASH_BROWSER=false
+```
+
+## Nginx Proxy Manager
+
+```yaml
+services:
+  app:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+```
+
+First time User:
+
+```yaml
+admin@example.com
+```
+
+First time Password:
+
+```yaml
+changeme
 ```

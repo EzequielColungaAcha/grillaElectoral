@@ -100,7 +100,7 @@ export function TableDetails() {
     return (
       <div className='bg-zinc-800 shadow-lg shadow-black p-2 h-full w-full'>
         <div className='flex justify-between items-center'>
-          <ButtonBackToTables />
+          {!user.assignedTable ? <ButtonBackToTables /> : <div></div>}
           <ButtonCloseTable table={data.table} search={setSearch} />
         </div>
         <div className='bg-zinc-900 mb-2 p-10 flex flex-col rounded-lg justify-between max-w-2xl m-auto'>

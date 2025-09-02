@@ -9,8 +9,7 @@ import {
   FACTION_DELETED,
   TABLE_CHANGED,
 } from '../graphql/subscription';
-import { seats, threshold } from '../config';
-import { useState } from 'react';
+import { seats } from '../config';
 import { toast } from 'keep-react';
 import { useLocation } from 'react-router-dom';
 
@@ -19,41 +18,41 @@ export function Escrutinio() {
   const location = useLocation();
   const isInPrensa = location.pathname === '/prensa';
 
-  const { data: votesSend } = useSubscription(FACTION_VOTES_SEND, {
+  useSubscription(FACTION_VOTES_SEND, {
     onData: ({ client, onData }) => {
       refetch();
     },
   });
 
-  const { data: configAdded } = useSubscription(FACTION_CONFIG_ADDED, {
+  useSubscription(FACTION_CONFIG_ADDED, {
     onData: ({ client, onData }) => {
       refetch();
     },
   });
-  const { data: configUpdate } = useSubscription(FACTION_CONFIG_UPDATE, {
+  useSubscription(FACTION_CONFIG_UPDATE, {
     onData: ({ client, onData }) => {
       refetch();
     },
   });
-  const { data: configDeleted } = useSubscription(FACTION_CONFIG_DELETED, {
-    onData: ({ client, onData }) => {
-      refetch();
-    },
-  });
-
-  const { data: votesUpdate } = useSubscription(FACTION_VOTES_UPDATE, {
+  useSubscription(FACTION_CONFIG_DELETED, {
     onData: ({ client, onData }) => {
       refetch();
     },
   });
 
-  const { data: votesDeleted } = useSubscription(FACTION_DELETED, {
+  useSubscription(FACTION_VOTES_UPDATE, {
     onData: ({ client, onData }) => {
       refetch();
     },
   });
 
-  const { data: tableChangedWithToast } = useSubscription(TABLE_CHANGED, {
+  useSubscription(FACTION_DELETED, {
+    onData: ({ client, onData }) => {
+      refetch();
+    },
+  });
+
+  useSubscription(TABLE_CHANGED, {
     onData: (data) => {
       // Only show toast if not in Prensa page (to avoid duplicate toasts)
       if (!isInPrensa) {
@@ -68,6 +67,7 @@ export function Escrutinio() {
       }
     },
   });
+
   if (loading) return <span className='loader'></span>;
   if (error) return <p>Error...</p>;
 
@@ -117,7 +117,7 @@ export function Escrutinio() {
 
   const calculateSeats = () => {
     let positivesIntendencia = intendencia.filter(
-      (pp) => pp.percentage >= threshold
+      (pp) => pp.percentage >= 100 / seats
     ).length;
 
     for (let i = 0; i < seats; i++) {
@@ -173,7 +173,7 @@ export function Escrutinio() {
               <div className='md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold'>
                 {candidato.name}
               </div>
-              <div className='relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
+              <div className='relative md:w-6/12 w-8/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
                 <div
                   className='h-full transition-all'
                   style={{
@@ -191,11 +191,11 @@ export function Escrutinio() {
               </div>
               {candidato.name != 'Blancos' &&
               data?.tables?.find((e) => !e.factions?.length) == undefined ? (
-                <div className='w-2/12 text-xl'>
+                <div className='w-4/12 text-xl'>
                   Escaños: {candidato.seats || 0} / {seats}
                 </div>
               ) : (
-                <div className='w-2/12' />
+                <div className='w-4/12' />
               )}
             </div>
           );
@@ -212,7 +212,7 @@ export function Escrutinio() {
               <div className='md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold'>
                 {candidato.name}
               </div>
-              <div className='relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
+              <div className='relative md:w-6/12 w-8/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
                 <div
                   className='h-full transition-all'
                   style={{
@@ -228,14 +228,7 @@ export function Escrutinio() {
                   {candidato.percentage == 'NaN' ? '0' : candidato.percentage}%
                 </div>
               </div>
-              {candidato.name != 'Blancos' &&
-              data?.tables?.find((e) => !e.factions?.length) == undefined ? (
-                <div className='w-2/12 text-xl'>
-                  Escaños: {candidato.seats || 0} / {seats}
-                </div>
-              ) : (
-                <div className='w-2/12' />
-              )}
+              <div className='w-4/12' />
             </div>
           );
         })}
@@ -251,7 +244,7 @@ export function Escrutinio() {
               <div className='md:w-4/12 w-full text-2xl md:text-right pr-2 font-semibold'>
                 {candidato.name}
               </div>
-              <div className='relative md:w-6/12 w-10/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
+              <div className='relative md:w-6/12 w-8/12 rounded-full h-6 items-center bg-opacity-80 overflow-hidden bg-zinc-600'>
                 <div
                   className='h-full transition-all'
                   style={{
@@ -267,14 +260,7 @@ export function Escrutinio() {
                   {candidato.percentage == 'NaN' ? '0' : candidato.percentage}%
                 </div>
               </div>
-              {candidato.name != 'Blancos' &&
-              data?.tables?.find((e) => !e.factions?.length) == undefined ? (
-                <div className='w-2/12 text-xl'>
-                  Escaños: {candidato.seats || 0} / {seats}
-                </div>
-              ) : (
-                <div className='w-2/12' />
-              )}
+              <div className='w-4/12' />
             </div>
           );
         })}

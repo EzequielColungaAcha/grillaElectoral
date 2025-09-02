@@ -11,6 +11,3 @@ export const PRIVACY = {
 
 // * En esta configuración se define cuántos escaños, es decir, bancas de concejales que se renuevan en el distrito
 export const seats = import.meta.env.VITE_SEATS;
-
-// * En esta configuración se define el % de threshold para saber qué partidos pasan
-export const threshold = import.meta.env.VITE_THRESHOLD;

@@ -9,9 +9,9 @@ export const Home = () => {
 
   const videos = [
     { user: 'admin', url: '/' },
-    { user: 'fiscal', url: 'https://youtu.be/pk0vQucgIQw' },
-    { user: 'base', url: 'https://youtu.be/_fhmEUihmHU' },
-    { user: 'prensa', url: 'https://youtu.be/5nGGK8fw97g' },
+    { user: 'fiscal', url: 'https://youtu.be/GxkXhwFrCkg' },
+    { user: 'base', url: 'https://youtu.be/w0PFs64W-co' },
+    { user: 'prensa', url: 'https://youtu.be/uwwcrJAfvTc' },
   ];
 
   useEffect(() => {

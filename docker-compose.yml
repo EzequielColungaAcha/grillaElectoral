@@ -4,7 +4,6 @@ services:
       context: ./grillaClient
       args:
         VITE_SEATS: ${SEATS}
-        VITE_THRESHOLD: ${THRESHOLD}
         VITE_HASH_BROWSER: ${HASH_BROWSER}
     ports:
       - '${CLIENT_PORT}:80'
