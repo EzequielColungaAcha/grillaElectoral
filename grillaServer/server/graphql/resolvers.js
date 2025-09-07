@@ -173,13 +173,14 @@ export const resolvers = {
     // * Query resolvers for Person
     persons: async (
       _,
-      { limit = 50, offset = 0, tableNumber, search, vote, affiliate }
+      { limit = 50, offset = 0, tableNumber, search, vote, affiliate, referer }
     ) => {
       const filter = {};
 
       if (tableNumber) filter.tableNumber = tableNumber;
       if (vote !== undefined) filter.vote = vote;
       if (affiliate !== undefined) filter.affiliate = affiliate;
+      if (referer !== undefined) filter.referer = referer;
 
       if (search) {
         const searchRegex = { $regex: search, $options: 'i' };
@@ -206,12 +207,16 @@ export const resolvers = {
       };
     },
 
-    personsCount: async (_, { tableNumber, search, vote, affiliate }) => {
+    personsCount: async (
+      _,
+      { tableNumber, search, vote, affiliate, referer }
+    ) => {
       const filter = {};
 
       if (tableNumber) filter.tableNumber = tableNumber;
       if (vote !== undefined) filter.vote = vote;
       if (affiliate !== undefined) filter.affiliate = affiliate;
+      if (referer !== undefined) filter.referer = referer;
 
       if (search) {
         const searchRegex = { $regex: search, $options: 'i' };

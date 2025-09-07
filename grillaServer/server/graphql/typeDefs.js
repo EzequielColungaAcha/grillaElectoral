@@ -27,6 +27,7 @@ export const typeDefs = gql`
       search: String
       vote: Boolean
       affiliate: Boolean
+      referer: String
     ): PersonsPaginatedResult!
     person(_id: ID!): Person!
     personsCount(
@@ -34,6 +35,7 @@ export const typeDefs = gql`
       search: String
       vote: Boolean
       affiliate: Boolean
+      referer: String
     ): Int!
     # // * ...
 

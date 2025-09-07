@@ -151,6 +151,7 @@ export const GET_PERSONS_PAGINATED = gql`
     $search: String
     $vote: Boolean
     $affiliate: Boolean
+    $referer: String
   ) {
     persons(
       limit: $limit
@@ -159,6 +160,7 @@ export const GET_PERSONS_PAGINATED = gql`
       search: $search
       vote: $vote
       affiliate: $affiliate
+      referer: $referer
     ) {
       persons {
         _id
@@ -186,12 +188,14 @@ export const GET_PERSONS_COUNT = gql`
     $search: String
     $vote: Boolean
     $affiliate: Boolean
+    $referer: String
   ) {
     personsCount(
       tableNumber: $tableNumber
       search: $search
       vote: $vote
       affiliate: $affiliate
+      referer: $referer
     )
   }
 `;

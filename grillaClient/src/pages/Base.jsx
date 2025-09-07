@@ -44,6 +44,7 @@ export const Base = () => {
   const [selectedSearch, setSelectedSearch] = useState('all');
   const [voteSearch, setVoteSearch] = useState('all');
   const [affiliateSearch, setAffiliateSearch] = useState('all');
+  const [refererSearch, setRefererSearch] = useState('all');
   const [allPersons, setAllPersons] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -60,8 +61,30 @@ export const Base = () => {
   const [cacheKey, setCacheKey] = useState('');
   const [loadedPages, setLoadedPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(0);
+  const [availableReferers, setAvailableReferers] = useState([]);
 
   const [updatePerson] = useMutation(UPDATE_PERSON, {});
+
+  // Separate query to get all affiliates and their referers
+  const { data: affiliatesData } = useQuery(GET_PERSONS_PAGINATED, {
+    variables: {
+      limit: 10000,
+      offset: 0,
+      affiliate: true,
+    },
+    skip: affiliateSearch !== 'affiliate',
+    onCompleted: (data) => {
+      if (data?.persons?.persons) {
+        // Extract unique referers from all affiliates
+        const referers = data.persons.persons
+          .filter((person) => person.referer && person.referer.trim() !== '')
+          .map((person) => person.referer.trim())
+          .filter((referer, index, array) => array.indexOf(referer) === index)
+          .sort();
+        setAvailableReferers(referers);
+      }
+    },
+  });
 
   // Debounce search input
   React.useEffect(() => {
@@ -88,7 +111,10 @@ export const Base = () => {
   // Build query variables based on current filters
   const queryVariables = React.useMemo(() => {
     const variables = {
-      limit: selectedSearch === 'all' ? ITEMS_PER_PAGE : 10000,
+      limit:
+        selectedSearch === 'all' && affiliateSearch === 'all'
+          ? ITEMS_PER_PAGE
+          : 10000,
       offset: 0, // Always start from 0 for initial query
     };
 
@@ -115,10 +141,22 @@ export const Base = () => {
 
     if (affiliateSearch === 'affiliate') {
       variables.affiliate = true;
+      variables.limit = 10000; // Load all affiliates
+
+      // Add referer filter only when affiliate filter is active
+      if (refererSearch !== 'all') {
+        variables.referer = refererSearch;
+      }
     }
 
     return variables;
-  }, [selectedSearch, voteSearch, affiliateSearch, debouncedSearch]);
+  }, [
+    selectedSearch,
+    voteSearch,
+    affiliateSearch,
+    refererSearch,
+    debouncedSearch,
+  ]);
 
   // Query for paginated persons data
   const {
@@ -138,7 +176,9 @@ export const Base = () => {
 
         // Show "Load All" option only when "all tables" is selected and there's more data
         setShowLoadAllOption(
-          selectedSearch === 'all' && (data?.persons?.hasMore || false)
+          selectedSearch === 'all' &&
+            affiliateSearch === 'all' &&
+            (data?.persons?.hasMore || false)
         );
       }
       setIsLoadingMore(false);
@@ -237,7 +277,7 @@ export const Base = () => {
   const handleTableFilterChange = React.useCallback(
     (value) => {
       setSelectedSearch(value);
-      const newCacheKey = `${value}-${voteSearch}-${affiliateSearch}-${debouncedSearch}`;
+      const newCacheKey = `${value}-${voteSearch}-${affiliateSearch}-${refererSearch}-${debouncedSearch}`;
       setCacheKey(newCacheKey);
 
       // Check if we have cached data for this filter combination
@@ -248,7 +288,9 @@ export const Base = () => {
         setLoadedPages(cachedData.loadedPages);
         setHasMore(cachedData.hasMore);
         setTotalCount(cachedData.totalCount);
-        setShowLoadAllOption(value === 'all' && cachedData.hasMore);
+        setShowLoadAllOption(
+          value === 'all' && affiliateSearch === 'all' && cachedData.hasMore
+        );
       } else {
         // No cached data, reset and refetch
         setLoadedPages(1);
@@ -261,13 +303,13 @@ export const Base = () => {
       setLoadingAll(false);
       setIsLoadingMore(false);
     },
-    [dataCache, voteSearch, affiliateSearch, debouncedSearch]
+    [dataCache, voteSearch, affiliateSearch, refererSearch, debouncedSearch]
   );
 
   const handleVoteFilterChange = React.useCallback(
     (value) => {
       setVoteSearch(value);
-      const newCacheKey = `${selectedSearch}-${value}-${affiliateSearch}-${debouncedSearch}`;
+      const newCacheKey = `${selectedSearch}-${value}-${affiliateSearch}-${refererSearch}-${debouncedSearch}`;
       setCacheKey(newCacheKey);
 
       // Check if we have cached data for this filter combination
@@ -278,7 +320,9 @@ export const Base = () => {
         setLoadedPages(cachedData.loadedPages);
         setHasMore(cachedData.hasMore);
         setTotalCount(cachedData.totalCount);
-        setShowLoadAllOption(selectedSearch === 'all' && cachedData.hasMore);
+        setShowLoadAllOption(
+          selectedSearch === 'all' && value === 'all' && cachedData.hasMore
+        );
       } else {
         // No cached data, reset and refetch
         setLoadedPages(1);
@@ -291,13 +335,19 @@ export const Base = () => {
       setLoadingAll(false);
       setIsLoadingMore(false);
     },
-    [dataCache, selectedSearch, affiliateSearch, debouncedSearch]
+    [dataCache, selectedSearch, affiliateSearch, refererSearch, debouncedSearch]
   );
 
   const handleAffiliateFilterChange = React.useCallback(
     (value) => {
       setAffiliateSearch(value);
-      const newCacheKey = `${selectedSearch}-${voteSearch}-${value}-${debouncedSearch}`;
+
+      // Reset referer filter when affiliate filter changes
+      if (value !== 'affiliate') {
+        setRefererSearch('all');
+      }
+
+      const newCacheKey = `${selectedSearch}-${voteSearch}-${value}-${refererSearch}-${debouncedSearch}`;
       setCacheKey(newCacheKey);
 
       // Check if we have cached data for this filter combination
@@ -308,7 +358,11 @@ export const Base = () => {
         setLoadedPages(cachedData.loadedPages);
         setHasMore(cachedData.hasMore);
         setTotalCount(cachedData.totalCount);
-        setShowLoadAllOption(selectedSearch === 'all' && cachedData.hasMore);
+        setShowLoadAllOption(
+          selectedSearch === 'all' &&
+            value === 'affiliate' &&
+            cachedData.hasMore
+        );
       } else {
         // No cached data, reset and refetch
         setLoadedPages(1);
@@ -321,7 +375,41 @@ export const Base = () => {
       setLoadingAll(false);
       setIsLoadingMore(false);
     },
-    [dataCache, selectedSearch, voteSearch, debouncedSearch]
+    [dataCache, selectedSearch, voteSearch, refererSearch, debouncedSearch]
+  );
+
+  const handleRefererFilterChange = React.useCallback(
+    (value) => {
+      setRefererSearch(value);
+      const newCacheKey = `${selectedSearch}-${voteSearch}-${affiliateSearch}-${value}-${debouncedSearch}`;
+      setCacheKey(newCacheKey);
+
+      // Check if we have cached data for this filter combination
+      const cachedData = dataCache[newCacheKey];
+      if (cachedData) {
+        // Use cached data immediately
+        setAllPersons(cachedData.persons);
+        setLoadedPages(cachedData.loadedPages);
+        setHasMore(cachedData.hasMore);
+        setTotalCount(cachedData.totalCount);
+        setShowLoadAllOption(
+          selectedSearch === 'all' &&
+            affiliateSearch === 'affiliate' &&
+            cachedData.hasMore
+        );
+      } else {
+        // No cached data, reset and refetch
+        setLoadedPages(1);
+        setAllPersons([]);
+        setHasMore(true);
+        setTotalCount(0);
+        setShowLoadAllOption(false);
+      }
+
+      setLoadingAll(false);
+      setIsLoadingMore(false);
+    },
+    [dataCache, selectedSearch, voteSearch, affiliateSearch, debouncedSearch]
   );
 
   // Throttled refetch function to prevent excessive API calls
@@ -391,8 +479,17 @@ export const Base = () => {
         const matchesAffiliateFilter =
           affiliateSearch === 'all' ||
           (affiliateSearch === 'affiliate' && newPerson.affiliate);
+        const matchesRefererFilter =
+          refererSearch === 'all' ||
+          (affiliateSearch === 'affiliate' &&
+            newPerson.referer === refererSearch);
 
-        if (matchesTableFilter && matchesVoteFilter && matchesAffiliateFilter) {
+        if (
+          matchesTableFilter &&
+          matchesVoteFilter &&
+          matchesAffiliateFilter &&
+          matchesRefererFilter
+        ) {
           setAllPersons((prevPersons) => {
             const exists = prevPersons.some((p) => p._id === newPerson._id);
             if (!exists) {
@@ -409,7 +506,13 @@ export const Base = () => {
         }
       }
     },
-    [selectedSearch, voteSearch, affiliateSearch, debouncedSearch]
+    [
+      selectedSearch,
+      voteSearch,
+      affiliateSearch,
+      refererSearch,
+      debouncedSearch,
+    ]
   );
 
   // Update the UI to show when person search is active
@@ -662,6 +765,27 @@ export const Base = () => {
             <option value='affiliate'>Afiliados</option>
           </select>
         </div>
+
+        {affiliateSearch === 'affiliate' && (
+          <div className='flex flex-col justify-center text-center gap-1'>
+            <label>Filtro por referente:</label>
+            <select
+              className={`border-zinc-500 disabled:opacity-20 bg-zinc-800 border-2 py-2 px-5 cursor-pointer hover:bg-zinc-500 hover:border-zinc-200 disabled:pointer-events-none ${
+                isPersonSearchActive ? 'opacity-50' : ''
+              }`}
+              value={refererSearch}
+              onChange={(e) => handleRefererFilterChange(e.target.value)}
+              disabled={isPersonSearchActive}
+            >
+              <option value='all'>Todos los referentes</option>
+              {availableReferers.map((referer) => (
+                <option key={referer} value={referer}>
+                  {referer}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Results Section */}
@@ -680,7 +804,7 @@ export const Base = () => {
                 onClick={() => {
                   setSearchInput('');
                   setDebouncedSearch('');
-                  const newCacheKey = `${selectedSearch}-${voteSearch}-${affiliateSearch}-`;
+                  const newCacheKey = `${selectedSearch}-${voteSearch}-${affiliateSearch}-${refererSearch}-`;
                   setCacheKey(newCacheKey);
 
                   // Check if we have cached data for this filter combination
@@ -722,7 +846,7 @@ export const Base = () => {
               </div>
             )}
             <div className='flex gap-4 mt-2 justify-center'>
-              {hasMore && !isSearching && (
+              {hasMore && !isSearching && affiliateSearch === 'all' && (
                 <button
                   onClick={loadMore}
                   disabled={dataLoading}
@@ -731,17 +855,19 @@ export const Base = () => {
                   {dataLoading ? 'Cargando...' : 'Cargar más'}
                 </button>
               )}
-              {showLoadAllOption && !isSearching && (
-                <button
-                  onClick={loadAllData}
-                  disabled={loadingAll}
-                  className='px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded disabled:opacity-50'
-                >
-                  {loadingAll
-                    ? 'Cargando todos...'
-                    : `Cargar todos (${totalCount} registros)`}
-                </button>
-              )}
+              {showLoadAllOption &&
+                !isSearching &&
+                affiliateSearch === 'all' && (
+                  <button
+                    onClick={loadAllData}
+                    disabled={loadingAll}
+                    className='px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded disabled:opacity-50'
+                  >
+                    {loadingAll
+                      ? 'Cargando todos...'
+                      : `Cargar todos (${totalCount} registros)`}
+                  </button>
+                )}
             </div>
           </>
         ) : (
@@ -761,7 +887,12 @@ export const Base = () => {
         error={error}
         onPersonClick={handlePersonClick}
         onLoadMore={
-          selectedSearch === 'all' && hasMore && !isSearching ? loadMore : null
+          selectedSearch === 'all' &&
+          hasMore &&
+          !isSearching &&
+          affiliateSearch === 'all'
+            ? loadMore
+            : null
         }
         isLoadingMore={dataLoading && currentPage > 0}
       />
