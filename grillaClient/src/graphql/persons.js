@@ -143,12 +143,6 @@ export const CREATE_MASSIVE_PERSONS = gql`
   }
 `;
 
-export const UPDATE_AFFILIATE_PERSONS = gql`
-  mutation ($data: [AffiliateRecord]) {
-    setMultipleAffiliate(data: $data)
-  }
-`;
-
 export const GET_PERSONS_PAGINATED = gql`
   query PersonsPaginated(
     $limit: Int

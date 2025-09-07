@@ -7,7 +7,12 @@ import { FileUploadModal } from '../../../modals/FileUploadModal';
 import { InfoModal } from '../../../modals/InfoModal';
 import { toast } from 'keep-react';
 
-export const UploadMassiveCSVButton = ({ refetch, datos, affiliateList }) => {
+export const UploadMassiveCSVButton = ({
+  refetch,
+  datos,
+  affiliateList,
+  refererList,
+}) => {
   const [showInfo, setShowInfo] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
 
@@ -29,6 +34,11 @@ export const UploadMassiveCSVButton = ({ refetch, datos, affiliateList }) => {
         encoding: 'UTF-8',
         complete: function (results) {
           results.data.map((row) => {
+            const affiliate = affiliateList.includes(row.dni) ? true : false;
+            const referer =
+              refererList.length &&
+              affiliate &&
+              refererList.find((ref) => ref.dni === row.dni);
             const person = {
               firstName: row.nombre.toUpperCase() || '',
               lastName: row.apellido.toUpperCase() || '',
@@ -36,8 +46,8 @@ export const UploadMassiveCSVButton = ({ refetch, datos, affiliateList }) => {
               order: parseInt(row.orden),
               address: row.dir,
               tableNumber: row.mesa,
-              affiliate: affiliateList.includes(row.dni) ? true : false,
-              referer: '',
+              affiliate: affiliate,
+              referer: referer?.referer || '',
               driver: '',
             };
             records.push(person);
