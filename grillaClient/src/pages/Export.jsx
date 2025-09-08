@@ -107,12 +107,7 @@ export const Export = () => {
           'Exportación completa de datos electorales incluyendo logs del sistema',
       },
       tables: data.tables,
-      logs: {
-        entries: data.logs?.logs || [],
-        totalCount: data.logs?.totalCount || 0,
-        hasMore: data.logs?.hasMore || false,
-        exportNote: 'Logs del sistema con todas las actividades registradas',
-      },
+      logs: data.logs?.logs || [],
       summary: {
         totalTables: data.tables?.length || 0,
         totalPersons:
@@ -126,7 +121,7 @@ export const Export = () => {
               sum + (table.persons?.filter((p) => p.vote)?.length || 0),
             0
           ) || 0,
-        totalLogs: data.logs?.totalCount || 0,
+        totalLogs: data.logs?.logs?.length || 0,
       },
     };
 
