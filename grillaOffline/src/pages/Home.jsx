@@ -32,16 +32,21 @@ export const Home = () => {
           setImportInfo({
             type: 'multi-file',
             fileCount: files.length,
-            dateRange:
-              first?.displayDate && last?.displayDate
-                ? `${first.displayDate} - ${last.displayDate}`
-                : 'Fechas no disponibles',
+            fileDates: files.map((file) => {
+              if (file.date) {
+                const date = new Date(file.date);
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                return `${month}/${year}`;
+              }
+              return 'Fecha no disponible';
+            }),
           });
         } else {
           setImportInfo({
             type: 'multi-file',
             fileCount: 0,
-            dateRange: 'Fechas no disponibles',
+            fileDates: [],
           });
         }
         return;
@@ -107,7 +112,9 @@ export const Home = () => {
       return (
         <span>
           <strong>{importInfo.fileCount}</strong> archivo(s) importados
-          {importInfo.dateRange ? ` • Rango: ${importInfo.dateRange}` : null}
+          {importInfo.fileDates && importInfo.fileDates.length > 0
+            ? ` • Fechas: ${importInfo.fileDates.join(', ')}`
+            : null}
         </span>
       );
     }
