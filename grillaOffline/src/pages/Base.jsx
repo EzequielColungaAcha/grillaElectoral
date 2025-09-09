@@ -28,7 +28,8 @@ export const Base = () => {
   const [showEditMessageModal, setShowEditMessageModal] = useState(false);
   const [availableReferers, setAvailableReferers] = useState([]);
 
-  const { getAllRecords, subscribe, isDBReady, updateRecord, getRecord } = useDB();
+  const { getAllRecords, subscribe, isDBReady, updateRecord, getRecord } =
+    useDB();
 
   // Check import mode on component mount
   useEffect(() => {
@@ -40,7 +41,10 @@ export const Base = () => {
     if (!isDBReady || importMode !== 'multi-file') return;
 
     try {
-      const multiFileRecord = await getRecord('multiFileImport', 'multi_file_data');
+      const multiFileRecord = await getRecord(
+        'multiFileImport',
+        'multi_file_data'
+      );
       if (multiFileRecord) {
         setMultiFileData(multiFileRecord);
       }
@@ -59,15 +63,18 @@ export const Base = () => {
       ]);
       setPersons(personsData || []);
       setTables(tablesData || []);
-      
+
       // Extract unique referers from affiliates
       const referers = (personsData || [])
-        .filter((person) => person.affiliate && person.referer && person.referer.trim() !== '')
+        .filter(
+          (person) =>
+            person.affiliate && person.referer && person.referer.trim() !== ''
+        )
         .map((person) => person.referer.trim())
         .filter((referer, index, array) => array.indexOf(referer) === index)
         .sort();
       setAvailableReferers(referers);
-      
+
       setError(null);
     } catch (err) {
       console.error('Error loading data:', err);
@@ -118,28 +125,36 @@ export const Base = () => {
     if (!multiFileData) {
       return <span className='loader'></span>;
     }
-    
+
     return (
       <div className='flex flex-col justify-center items-center gap-5'>
         <div className='text-center mb-4'>
-          <h1 className='text-3xl font-bold text-zinc-100 mb-2'>Historial de Votación</h1>
+          <h1 className='text-3xl font-bold text-zinc-100 mb-2'>
+            Historial de Votación
+          </h1>
           <p className='text-zinc-300'>
-            Datos importados de {multiFileData.fileMetadata?.length || 0} archivos
+            Datos importados de {multiFileData.fileMetadata?.length || 0}{' '}
+            archivos
           </p>
           <div className='flex flex-wrap justify-center gap-2 mt-2'>
             {multiFileData.fileMetadata?.map((file, index) => (
-              <span key={index} className='px-2 py-1 bg-zinc-700 rounded text-xs'>
+              <span
+                key={index}
+                className='px-2 py-1 bg-zinc-700 rounded text-xs'
+              >
                 {(() => {
                   const date = new Date(file.date);
-                  return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+                  return `${(date.getMonth() + 1)
+                    .toString()
+                    .padStart(2, '0')}/${date.getFullYear()}`;
                 })()}
               </span>
             ))}
           </div>
         </div>
-        
-        <MultiFileTable 
-          persons={multiFileData.persons || []} 
+
+        <MultiFileTable
+          persons={multiFileData.persons || []}
           fileMetadata={multiFileData.fileMetadata || []}
           search={search}
           setSearch={setSearch}
@@ -227,7 +242,9 @@ export const Base = () => {
     ) {
       const matchesRefererFilter =
         refererSearch === 'all' || person.referer === refererSearch;
-      return person.affiliate == true && person.vote == true && matchesRefererFilter;
+      return (
+        person.affiliate == true && person.vote == true && matchesRefererFilter
+      );
     } else if (
       search === '' &&
       voteSearch === 'notVoted' &&
@@ -235,7 +252,9 @@ export const Base = () => {
     ) {
       const matchesRefererFilter =
         refererSearch === 'all' || person.referer === refererSearch;
-      return person.affiliate == true && person.vote == false && matchesRefererFilter;
+      return (
+        person.affiliate == true && person.vote == false && matchesRefererFilter
+      );
     } else {
       return (
         person.firstName.toLowerCase().includes(search) ||
@@ -259,9 +278,9 @@ export const Base = () => {
   return (
     <div className='flex flex-col justify-center items-center gap-5'>
       <label className='text-center flex flex-col'>
-          Filtro por persona:
-          <br />
-          <small>(El filtro por persona anula los demás filtros)</small>
+        Filtro por persona:
+        <br />
+        <small>(El filtro por persona anula los demás filtros)</small>
         <div className='relative'>
           <input
             className='border-zinc-500 mt-2 disabled:opacity-20 bg-zinc-800 border-2 py-2 px-5 focus:bg-zinc-700 focus:border-zinc-200'
@@ -379,9 +398,7 @@ export const Base = () => {
             </div>
           </>
         ) : selectedSearch === 'all' ? (
-          <>
-            Mostrando {filteredPersons.length} registros
-          </>
+          <>Mostrando {filteredPersons.length} registros</>
         ) : (
           <button
             onClick={() => setSelectedSearch('all')}

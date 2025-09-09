@@ -5,7 +5,6 @@ import { useAuth } from '../../context/simpleAuthContext';
 import { URL } from '../../config';
 import { Calendar, Users } from '@phosphor-icons/react';
 
-
 export const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -44,7 +43,9 @@ export const Login = () => {
         navigate(URL);
       } catch (error) {
         console.error('Error importing data:', error);
-        setError('El archivo JSON no tiene el formato correcto o está corrupto.');
+        setError(
+          'El archivo JSON no tiene el formato correcto o está corrupto.'
+        );
       } finally {
         setLoading(false);
       }
@@ -63,7 +64,7 @@ export const Login = () => {
     if (files.length === 0) return;
 
     // Validate all files are JSON
-    const invalidFiles = files.filter(file => !file.name.endsWith('.json'));
+    const invalidFiles = files.filter((file) => !file.name.endsWith('.json'));
     if (invalidFiles.length > 0) {
       setMultiFileError('Todos los archivos deben ser JSON válidos.');
       return;
@@ -86,7 +87,10 @@ export const Login = () => {
         let fileDate;
         if (dateMatch) {
           const [, day, month, year] = dateMatch;
-          fileDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          fileDate = `${year}-${month.padStart(2, '0')}-${day.padStart(
+            2,
+            '0'
+          )}`;
         } else {
           fileDate = new Date(file.lastModified).toISOString().split('T')[0];
         }
@@ -94,18 +98,18 @@ export const Login = () => {
         fileMetadata.push({
           filename: file.name,
           date: fileDate,
-          displayDate: new Date(fileDate).toLocaleDateString('es-AR')
+          displayDate: new Date(fileDate).toLocaleDateString('es-AR'),
         });
 
         // Extract persons from all tables
         if (jsonData.tables && Array.isArray(jsonData.tables)) {
-          jsonData.tables.forEach(table => {
+          jsonData.tables.forEach((table) => {
             if (table.persons && Array.isArray(table.persons)) {
-              table.persons.forEach(person => {
+              table.persons.forEach((person) => {
                 allPersonsData.push({
                   ...person,
                   fileDate: fileDate,
-                  filename: file.name
+                  filename: file.name,
                 });
               });
             }
@@ -115,8 +119,8 @@ export const Login = () => {
 
       // Group persons by DNI and merge voting history
       const personsMap = new Map();
-      
-      allPersonsData.forEach(person => {
+
+      allPersonsData.forEach((person) => {
         const key = person.dni;
         if (!personsMap.has(key)) {
           personsMap.set(key, {
@@ -125,29 +129,34 @@ export const Login = () => {
             lastName: person.lastName,
             tableNumber: person.tableNumber,
             order: person.order,
-            votingHistory: []
+            votingHistory: [],
           });
         }
-        
+
         const existingPerson = personsMap.get(key);
         existingPerson.votingHistory.push({
           date: person.fileDate,
           filename: person.filename,
-          voted: person.vote
+          voted: person.vote,
+          updatedAt: person.updatedAt,
         });
       });
 
       // Sort voting history by date
-      personsMap.forEach(person => {
-        person.votingHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+      personsMap.forEach((person) => {
+        person.votingHistory.sort(
+          (a, b) => new Date(a.date) - new Date(b.date)
+        );
       });
 
       // Store the processed data
       const multiFileData = {
         persons: Array.from(personsMap.values()),
-        fileMetadata: fileMetadata.sort((a, b) => new Date(a.date) - new Date(b.date)),
+        fileMetadata: fileMetadata.sort(
+          (a, b) => new Date(a.date) - new Date(b.date)
+        ),
         importDate: new Date().toISOString(),
-        importType: 'multi-file'
+        importType: 'multi-file',
       };
 
       // Store in a special collection for multi-file imports
@@ -155,12 +164,14 @@ export const Login = () => {
 
       // Set a flag to indicate multi-file mode
       localStorage.setItem('importMode', 'multi-file');
-      
+
       login();
       navigate(URL);
     } catch (error) {
       console.error('Error importing multi-file data:', error);
-      setMultiFileError('Error al procesar los archivos. Verifica que todos sean JSON válidos.');
+      setMultiFileError(
+        'Error al procesar los archivos. Verifica que todos sean JSON válidos.'
+      );
     } finally {
       setMultiFileLoading(false);
     }
@@ -184,7 +195,7 @@ export const Login = () => {
                 Grilla Electoral - Modo Offline
               </h1>
             </div>
-            
+
             {/* Import Mode Selection */}
             <div className='mb-6'>
               <div className='flex justify-center gap-4 mb-4'>
@@ -270,11 +281,13 @@ export const Login = () => {
                   <>
                     <div className='text-center mb-6'>
                       <p className='text-zinc-200 mb-4'>
-                        Selecciona múltiples archivos JSON para ver el historial de votación.
+                        Selecciona múltiples archivos JSON para ver el historial
+                        de votación.
                       </p>
                       <p className='text-zinc-300 text-sm mb-6'>
-                        Los archivos deben tener fechas en el nombre (ej: datos-8-9-2025.json) 
-                        o se usará la fecha de modificación del archivo.
+                        Los archivos deben tener fechas en el nombre (ej:
+                        datos-8-9-2025.json) o se usará la fecha de modificación
+                        del archivo.
                       </p>
                     </div>
 
@@ -282,10 +295,14 @@ export const Login = () => {
                       <label
                         htmlFor='multiJsonFiles'
                         className={`cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-white rounded-md px-6 py-3 transition-colors ${
-                          multiFileLoading ? 'opacity-50 cursor-not-allowed' : ''
+                          multiFileLoading
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
                         }`}
                       >
-                        {multiFileLoading ? 'Procesando...' : 'Seleccionar archivos JSON'}
+                        {multiFileLoading
+                          ? 'Procesando...'
+                          : 'Seleccionar archivos JSON'}
                       </label>
                       <input
                         id='multiJsonFiles'
@@ -312,7 +329,8 @@ export const Login = () => {
 
                     <div className='text-center mt-6'>
                       <p className='text-zinc-300 text-xs'>
-                        Solo se mostrará la página Base con historial de votación por fechas.
+                        Solo se mostrará la página Base con historial de
+                        votación por fechas.
                       </p>
                     </div>
                   </>
