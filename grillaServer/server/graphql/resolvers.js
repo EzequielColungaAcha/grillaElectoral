@@ -1,14 +1,14 @@
-// * Importing required models
+import { PubSub } from 'graphql-subscriptions';
+import User from '../models/User.js';
 import Table from '../models/Table.js';
 import Person from '../models/Person.js';
-import FactionConfig from '../models/FactionConfig.js';
 import Faction from '../models/Faction.js';
-import User from '../models/User.js';
+import FactionConfig from '../models/FactionConfig.js';
+import Log from '../models/Log.js';
 import bcrypt from 'bcryptjs';
-import Jwt from 'jsonwebtoken';
-
+import jwt from 'jsonwebtoken';
 import {
-  logger,
+  logAction,
   logPersonVote,
   logPersonAdded,
   logPersonDeleted,
@@ -18,1284 +18,1121 @@ import {
   logUserAction,
   logTableAction,
   logFactionAction,
-  logAction,
 } from '../utils/logger.js';
 
-import { PubSub } from 'graphql-subscriptions';
-
 const pubsub = new PubSub();
-import fs from 'fs';
-import path from 'path';
 
 export const resolvers = {
   Query: {
-    // * Query resolvers for Users
-    users: async () => User.find(),
-    // * ...
+    // User queries
+    users: async () => {
+      try {
+        const users = await User.find().populate('assignedTableId');
+        return users.map((user) => ({
+          ...user.toObject(),
+          assignedTable: user.assignedTableId,
+        }));
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
 
-    // * Query resolvers for Table
+    usersQuantity: async () => {
+      try {
+        return await User.countDocuments();
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    // Table queries
     tables: async () => {
-      // Only use this for admin purposes - prefer tablesWithCounts for performance
-      return await Table.find().sort({ number: 1 });
+      try {
+        const tables = await Table.find().sort({ number: 1 });
+        const result = [];
+
+        for (const table of tables) {
+          const persons = await Person.find({ tableId: table._id });
+          const factions = await Faction.find({ tableId: table._id });
+
+          result.push({
+            ...table.toObject(),
+            totalPersons: persons.length,
+            voted: persons.filter((p) => p.vote).length,
+            factions,
+          });
+        }
+
+        return result;
+      } catch (error) {
+        throw new Error(error);
+      }
     },
 
     tablesForFiscal: async (_, { tableId }) => {
-      if (tableId) {
-        // Return only the assigned table
-        const table = await Table.findById(tableId);
-        return table ? [table] : [];
-      } else {
-        // Return all tables for Fiscal General
-        return await Table.find().sort({ number: 1 });
+      try {
+        let query = {};
+        if (tableId) {
+          query._id = tableId;
+        }
+
+        const tables = await Table.find(query).sort({ number: 1 });
+        const result = [];
+
+        for (const table of tables) {
+          const persons = await Person.find({ tableId: table._id });
+          const factions = await Faction.find({ tableId: table._id });
+
+          result.push({
+            ...table.toObject(),
+            totalPersons: persons.length,
+            voted: persons.filter((p) => p.vote).length,
+            factions,
+          });
+        }
+
+        return result;
+      } catch (error) {
+        throw new Error(error);
       }
     },
+
+    table: async (_, { _id }) => {
+      try {
+        const table = await Table.findById(_id);
+        if (!table) throw new Error('Table not found');
+
+        const persons = await Person.find({ tableId: _id }).sort({ order: 1 });
+        const factions = await Faction.find({ tableId: _id }).populate(
+          'configId'
+        );
+
+        return {
+          ...table.toObject(),
+          persons,
+          factions: factions.map((f) => ({
+            ...f.toObject(),
+            config: f.configId,
+          })),
+          totalPersons: persons.length,
+          voted: persons.filter((p) => p.vote).length,
+        };
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
     tablesWithCounts: async () => {
-      const tables = await Table.aggregate([
-        {
-          $lookup: {
-            from: 'people',
-            localField: '_id',
-            foreignField: 'tableId',
-            as: 'persons',
-          },
-        },
-        {
-          $lookup: {
-            from: 'factions',
-            localField: '_id',
-            foreignField: 'tableId',
-            as: 'factions',
-          },
-        },
-        {
-          $addFields: {
-            totalPersons: { $size: '$persons' },
-            voted: {
-              $size: {
-                $filter: {
-                  input: '$persons',
-                  cond: { $eq: ['$$this.vote', true] },
-                },
-              },
-            },
-            factionsCount: { $size: '$factions' },
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            number: 1,
-            description: 1,
-            status: 1,
-            totalPersons: 1,
-            voted: 1,
-            factionsCount: 1,
-          },
-        },
-        { $sort: { number: 1 } },
-      ]);
-      return tables;
+      try {
+        const tables = await Table.find().sort({ number: 1 });
+        const result = [];
+
+        for (const table of tables) {
+          const persons = await Person.find({ tableId: table._id });
+          const factions = await Faction.find({ tableId: table._id });
+
+          result.push({
+            ...table.toObject(),
+            totalPersons: persons.length,
+            voted: persons.filter((p) => p.vote).length,
+            factionsCount: factions.length,
+          });
+        }
+
+        return result;
+      } catch (error) {
+        throw new Error(error);
+      }
     },
 
-    tablesPaginated: async (_, { limit = 20, offset = 0, search }) => {
-      const matchStage = search
-        ? {
-            $or: [
-              { number: { $regex: search, $options: 'i' } },
-              { description: { $regex: search, $options: 'i' } },
-            ],
-          }
-        : {};
-
-      const pipeline = [
-        { $match: matchStage },
-        {
-          $lookup: {
-            from: 'people',
-            localField: '_id',
-            foreignField: 'tableId',
-            as: 'persons',
-          },
-        },
-        {
-          $lookup: {
-            from: 'factions',
-            localField: '_id',
-            foreignField: 'tableId',
-            as: 'factions',
-          },
-        },
-        {
-          $addFields: {
-            totalPersons: { $size: '$persons' },
-            voted: {
-              $size: {
-                $filter: {
-                  input: '$persons',
-                  cond: { $eq: ['$$this.vote', true] },
-                },
-              },
-            },
-            factionsCount: { $size: '$factions' },
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            number: 1,
-            description: 1,
-            status: 1,
-            totalPersons: 1,
-            voted: 1,
-            factionsCount: 1,
-          },
-        },
-        { $sort: { number: 1 } },
-      ];
-
-      const [tables, totalCount] = await Promise.all([
-        Table.aggregate([...pipeline, { $skip: offset }, { $limit: limit }]),
-        Table.aggregate([...pipeline, { $count: 'total' }]).then(
-          (result) => result[0]?.total || 0
-        ),
-      ]);
-
-      return {
-        tables,
-        totalCount,
-        hasMore: offset + limit < totalCount,
-      };
-    },
-
-    table: async (_, { _id }) => await Table.findById(_id),
-    // * ...
-
-    // * Query resolvers for Person
+    // Person queries
     persons: async (
       _,
       { limit = 50, offset = 0, tableNumber, search, vote, affiliate, referer }
     ) => {
-      const filter = {};
+      try {
+        let query = {};
 
-      if (tableNumber) filter.tableNumber = tableNumber;
-      if (vote !== undefined) filter.vote = vote;
-      if (affiliate !== undefined) filter.affiliate = affiliate;
-      if (referer !== undefined) filter.referer = referer;
+        if (tableNumber) {
+          query.tableNumber = tableNumber;
+        }
 
-      if (search) {
-        const searchRegex = { $regex: search, $options: 'i' };
-        filter.$or = [
-          { firstName: searchRegex },
-          { lastName: searchRegex },
-          { dni: searchRegex },
-        ];
-      }
+        if (search) {
+          query.$or = [
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } },
+            { dni: { $regex: search, $options: 'i' } },
+          ];
+        }
 
-      const [persons, totalCount] = await Promise.all([
-        Person.find(filter)
+        if (vote !== undefined) {
+          query.vote = vote;
+        }
+
+        if (affiliate !== undefined) {
+          query.affiliate = affiliate;
+        }
+
+        if (referer) {
+          query.referer = referer;
+        }
+
+        const totalCount = await Person.countDocuments(query);
+        const persons = await Person.find(query)
           .sort({ tableNumber: 1, order: 1 })
           .skip(offset)
-          .limit(limit)
-          .lean(), // Use lean() for better performance when we don't need full Mongoose documents
-        Person.countDocuments(filter),
-      ]);
+          .limit(limit);
 
-      return {
-        persons,
-        totalCount,
-        hasMore: offset + limit < totalCount,
-      };
+        return {
+          persons,
+          totalCount,
+          hasMore: offset + limit < totalCount,
+        };
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    person: async (_, { _id }) => {
+      try {
+        const person = await Person.findById(_id).populate('tableId');
+        if (!person) throw new Error('Person not found');
+
+        return {
+          ...person.toObject(),
+          table: person.tableId,
+        };
+      } catch (error) {
+        throw new Error(error);
+      }
     },
 
     personsCount: async (
       _,
       { tableNumber, search, vote, affiliate, referer }
     ) => {
-      const filter = {};
-
-      if (tableNumber) filter.tableNumber = tableNumber;
-      if (vote !== undefined) filter.vote = vote;
-      if (affiliate !== undefined) filter.affiliate = affiliate;
-      if (referer !== undefined) filter.referer = referer;
-
-      if (search) {
-        const searchRegex = { $regex: search, $options: 'i' };
-        filter.$or = [
-          { firstName: searchRegex },
-          { lastName: searchRegex },
-          { dni: searchRegex },
-        ];
-      }
-
-      return await Person.countDocuments(filter);
-    },
-
-    person: async (_, { _id }) => await Person.findById(_id),
-
-    // * Quantity
-    personTotal: async () => await Person.countDocuments(),
-    personVoted: async () => await Person.countDocuments({ vote: true }),
-    personNoVoted: async () => await Person.countDocuments({ vote: false }),
-    votedPercent: async () =>
-      ((await Person.countDocuments({ vote: true })) /
-        (await Person.countDocuments())) *
-      100,
-
-    usersQuantity: async () => await User.countDocuments(),
-
-    tableTotal: async (_, { _id }) =>
-      await Person.countDocuments({ tableId: _id }),
-    tableVoteTotal: async (_, { _id }) =>
-      await Person.countDocuments({ tableId: _id, vote: true }),
-    tableNoVoteTotal: async (_, { _id }) =>
-      await Person.countDocuments({ tableId: _id, vote: false }),
-    tableVoteTotalPercent: async (_, { _id }) =>
-      (
-        ((await Person.countDocuments({ tableId: _id, vote: true })) /
-          (await Person.countDocuments({ tableId: _id }))) *
-        100
-      ).toFixed(2),
-
-    totalAbiertaStatus: async () =>
-      await Table.countDocuments({ status: 'Abierta' }),
-    totalCerradaStatus: async () =>
-      await Table.countDocuments({ status: 'Cerrada' }),
-    totalDatosEnviadosStatus: async () =>
-      await Table.countDocuments({ status: 'DatosEnviados' }),
-
-    // * ...
-
-    // * Query resolvers for Faction Config
-    factionsConfig: async () => await FactionConfig.find(),
-    anyFaction: async () => Faction.countDocuments(),
-
-    factionChartJS: async () => {
-      // Use aggregation for better performance
-      const result = await FactionConfig.aggregate([
-        {
-          $lookup: {
-            from: 'factions',
-            localField: '_id',
-            foreignField: 'configId',
-            as: 'factions',
-          },
-        },
-        {
-          $addFields: {
-            votes: { $sum: '$factions.votes' },
-            percentage: 0,
-            seats: 0,
-          },
-        },
-        {
-          $project: {
-            id: { $toString: '$_id' },
-            name: 1,
-            color: 1,
-            position: 1,
-            votes: 1,
-            percentage: 1,
-            seats: 1,
-          },
-        },
-      ]);
-
-      return JSON.stringify(result);
-    },
-
-    // * Query resolver for logs
-    logs: async (_, { limit = 50, offset = 0, action, startDate, endDate }) => {
       try {
-        const logFilePath = path.join(
-          process.cwd(),
-          'server',
-          'grillaLogs.log'
-        );
+        let query = {};
 
-        if (!fs.existsSync(logFilePath)) {
-          return {
-            logs: [],
-            totalCount: 0,
-            hasMore: false,
-          };
+        if (tableNumber) {
+          query.tableNumber = tableNumber;
         }
 
-        const logContent = fs.readFileSync(logFilePath, 'utf8');
-        const logLines = logContent
-          .trim()
-          .split('\n')
-          .filter((line) => line.trim());
+        if (search) {
+          query.$or = [
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } },
+            { dni: { $regex: search, $options: 'i' } },
+          ];
+        }
 
-        // Parse and filter logs
-        let parsedLogs = [];
+        if (vote !== undefined) {
+          query.vote = vote;
+        }
 
-        for (let i = logLines.length - 1; i >= 0; i--) {
-          // Reverse order (newest first)
-          try {
-            const logEntry = JSON.parse(logLines[i]);
+        if (affiliate !== undefined) {
+          query.affiliate = affiliate;
+        }
 
-            // Apply filters
-            if (action && logEntry.metadata?.action !== action) continue;
+        if (referer) {
+          query.referer = referer;
+        }
 
-            if (startDate) {
-              const logDate = new Date(logEntry.timestamp);
-              const filterStartDate = new Date(startDate);
-              if (logDate < filterStartDate) continue;
-            }
+        return await Person.countDocuments(query);
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
 
-            if (endDate) {
-              const logDate = new Date(logEntry.timestamp);
-              const filterEndDate = new Date(endDate);
-              filterEndDate.setHours(23, 59, 59, 999); // End of day
-              if (logDate > filterEndDate) continue;
-            }
+    // Statistics queries
+    personTotal: async () => {
+      try {
+        return await Person.countDocuments();
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
 
-            // Transform log entry to match GraphQL schema
-            const transformedLog = {
-              id: `${logEntry.timestamp}-${i}`,
-              timestamp: logEntry.timestamp,
-              level: logEntry.level || 'info',
-              message: logEntry.message || '',
-              action: logEntry.metadata?.action || null,
-              user: logEntry.metadata?.user
-                ? {
-                    id: logEntry.metadata.user.id,
-                    username: logEntry.metadata.user.username,
-                    role: logEntry.metadata.user.role,
-                    name: logEntry.metadata.user.name,
-                  }
-                : null,
-              target: logEntry.metadata?.target
-                ? {
-                    type: logEntry.metadata.target.type,
-                    id: logEntry.metadata.target.id,
-                    identifier: logEntry.metadata.target.identifier,
-                    number: logEntry.metadata.target.number,
-                  }
-                : null,
-              changes: logEntry.metadata?.changes
-                ? JSON.stringify(logEntry.metadata.changes)
-                : null,
-              metadata: logEntry.metadata
-                ? JSON.stringify(logEntry.metadata)
-                : null,
-            };
+    personVoted: async () => {
+      try {
+        return await Person.countDocuments({ vote: true });
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
 
-            parsedLogs.push(transformedLog);
-          } catch (parseError) {
-            // Skip malformed log entries
-            continue;
+    personNoVoted: async () => {
+      try {
+        return await Person.countDocuments({ vote: false });
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    votedPercent: async () => {
+      try {
+        const total = await Person.countDocuments();
+        const voted = await Person.countDocuments({ vote: true });
+        return total > 0 ? (voted / total) * 100 : 0;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    // Faction queries
+    factionsConfig: async () => {
+      try {
+        return await FactionConfig.find().sort({ position: 1, name: 1 });
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    anyFaction: async () => {
+      try {
+        return await Faction.countDocuments();
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    factionChartJS: async () => {
+      try {
+        const factionConfigs = await FactionConfig.find();
+        const result = [];
+
+        for (const config of factionConfigs) {
+          const factions = await Faction.find({ configId: config._id });
+          const totalVotes = factions.reduce((sum, f) => sum + f.votes, 0);
+
+          result.push({
+            id: config._id,
+            name: config.name,
+            color: config.color,
+            position: config.position,
+            votes: totalVotes,
+            percentage: 0,
+            seats: 0,
+          });
+        }
+
+        return JSON.stringify(result);
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    // Logs queries
+    logs: async (_, { limit = 50, offset = 0, action, startDate, endDate }) => {
+      try {
+        let query = {};
+
+        if (action) {
+          query.action = action;
+        }
+
+        if (startDate || endDate) {
+          query.timestamp = {};
+          if (startDate) {
+            query.timestamp.$gte = new Date(startDate);
+          }
+          if (endDate) {
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999);
+            query.timestamp.$lte = endDateTime;
           }
         }
 
-        const totalCount = parsedLogs.length;
-        const paginatedLogs = parsedLogs.slice(offset, offset + limit);
-        const hasMore = offset + limit < totalCount;
+        const totalCount = await Log.countDocuments(query);
+        const logs = await Log.find(query)
+          .sort({ timestamp: -1 })
+          .skip(offset)
+          .limit(limit);
 
         return {
-          logs: paginatedLogs,
+          logs: logs.map((log) => ({
+            ...log.toObject(),
+            id: log._id,
+            changes: log.changes ? JSON.stringify(log.changes) : null,
+            metadata: log.metadata ? JSON.stringify(log.metadata) : null,
+          })),
           totalCount,
-          hasMore,
+          hasMore: offset + limit < totalCount,
         };
       } catch (error) {
-        console.error('Error reading logs:', error);
-        return {
-          logs: [],
-          totalCount: 0,
-          hasMore: false,
-        };
+        throw new Error(error);
       }
     },
-    // * ...
   },
 
   Mutation: {
-    // * Mutation for Auth Register
-    registerUser: async (
-      _,
-      { registerInput: { username, name, password, rol, assignedTableId } },
-      context
-    ) => {
-      const oldUser = await User.findOne({ username });
-      if (oldUser) {
-        throw new Error('El Usuario ya existe!');
-      }
-      var encryptedPassword = await bcrypt.hash(password, 10);
-      const newUser = new User({
-        username,
-        name,
-        rol,
-        assignedTableId: assignedTableId || null,
-        password: encryptedPassword,
-      });
-      const token = Jwt.sign(
-        {
-          user_id: newUser._id,
+    // User mutations
+    registerUser: async (_, { registerInput }) => {
+      try {
+        const { username, name, password, rol, assignedTableId } =
+          registerInput;
+
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+          throw new Error('El Usuario ya existe!');
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = new User({
           username,
           name,
+          password: hashedPassword,
           rol,
-        },
-        'UNFASE_STRINGYFIED',
-        {
-          expiresIn: '24h',
-        }
-      );
-      newUser.token = token;
-      const savedUser = await newUser.save();
-      pubsub.publish('USER_ADDED', { userAdded: savedUser });
+          assignedTableId: assignedTableId || null,
+        });
 
-      // Log user creation
-      const performer = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logUserAction('USER_CREATED', performer, savedUser, {
-        username: savedUser.username,
-        name: savedUser.name,
-        rol: savedUser.rol,
-      });
+        const savedUser = await user.save();
 
-      return savedUser;
-    },
+        // Log user creation
+        await logUserAction('USER_CREATED', null, savedUser);
 
-    updateUserTableAssignment: async (_, { _id, assignedTableId }, context) => {
-      // Get the old user data before update for logging
-      const oldUser = await User.findById(_id).populate('assignedTableId');
-
-      const updatedUser = await User.findByIdAndUpdate(
-        _id,
-        { assignedTableId: assignedTableId || null },
-        { new: true }
-      ).populate('assignedTableId');
-
-      if (!updatedUser) throw new Error('User not found');
-
-      // Create the user object with proper assignedTable structure
-      const userWithTable = {
-        ...updatedUser.toObject(),
-        assignedTable: updatedUser.assignedTableId
-          ? {
-              _id: updatedUser.assignedTableId._id,
-              number: updatedUser.assignedTableId.number,
-            }
-          : null,
-      };
-
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-
-      // Prepare the changes object with before/after values
-      const changes = {
-        assignedTable: {
-          old: oldUser?.assignedTableId
-            ? `Mesa ${oldUser.assignedTableId.number}`
-            : 'Fiscal General (todas las mesas)',
-          new: updatedUser.assignedTableId
-            ? `Mesa ${updatedUser.assignedTableId.number}`
-            : 'Fiscal General (todas las mesas)',
-        },
-      };
-
-      logUserAction(
-        'USER_TABLE_ASSIGNMENT_UPDATED',
-        user,
-        updatedUser,
-        changes
-      );
-
-      // Publish subscription for table assignment change
-      await pubsub.publish('USER_TABLE_ASSIGNMENT_UPDATED', {
-        userTableAssignmentUpdated: userWithTable,
-      });
-
-      return userWithTable;
-    },
-
-    loginUser: async (_, { loginInput: { username, password } }) => {
-      const user = await User.findOne({ username }).populate('assignedTableId');
-      if (user && (await bcrypt.compare(password, user.password))) {
-        const token = Jwt.sign(
+        const token = jwt.sign(
           {
-            user_id: user._id,
-            username,
-            name: user.name,
-            rol: user.rol,
-            assignedTable: user.assignedTableId
-              ? {
-                  _id: user.assignedTableId._id,
-                  number: user.assignedTableId.number,
-                }
+            user_id: savedUser._id,
+            username: savedUser.username,
+            name: savedUser.name,
+            rol: savedUser.rol,
+            assignedTable: assignedTableId
+              ? await Table.findById(assignedTableId)
               : null,
           },
           'UNFASE_STRINGYFIED',
+          { expiresIn: '24h' }
+        );
+
+        pubsub.publish('USER_ADDED', { userAdded: savedUser });
+
+        return {
+          ...savedUser.toObject(),
+          token,
+        };
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    loginUser: async (_, { loginInput }) => {
+      try {
+        const { username, password } = loginInput;
+
+        const user = await User.findOne({ username }).populate(
+          'assignedTableId'
+        );
+        if (!user) {
+          throw new Error('Incorrect Usuario o Contraseña');
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+          throw new Error('Incorrect Usuario o Contraseña');
+        }
+
+        const token = jwt.sign(
           {
-            expiresIn: '24h',
+            user_id: user._id,
+            username: user.username,
+            name: user.name,
+            rol: user.rol,
+            assignedTable: user.assignedTableId,
+          },
+          'UNFASE_STRINGYFIED',
+          { expiresIn: '24h' }
+        );
+
+        return {
+          username: user.username,
+          name: user.name,
+          rol: user.rol,
+          token,
+        };
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    deleteUser: async (_, { _id }, { user: currentUser }) => {
+      try {
+        const userToDelete = await User.findById(_id);
+        if (!userToDelete) {
+          throw new Error('User not found');
+        }
+
+        await User.findByIdAndDelete(_id);
+
+        // Log user deletion
+        await logUserAction('USER_DELETED', currentUser, userToDelete);
+
+        pubsub.publish('USER_DELETED', { userDeleted: userToDelete });
+        return userToDelete;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    updateUserTableAssignment: async (
+      _,
+      { _id, assignedTableId },
+      { user: currentUser }
+    ) => {
+      try {
+        const user = await User.findById(_id).populate('assignedTableId');
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        const oldTable = user.assignedTableId;
+        const newTable = assignedTableId
+          ? await Table.findById(assignedTableId)
+          : null;
+
+        user.assignedTableId = assignedTableId || null;
+        const updatedUser = await user.save();
+        await updatedUser.populate('assignedTableId');
+
+        // Log table assignment change
+        await logUserAction(
+          'USER_TABLE_ASSIGNMENT_UPDATED',
+          currentUser,
+          updatedUser,
+          {
+            assignedTable: {
+              old: oldTable ? `Mesa ${oldTable.number}` : 'Sin asignación',
+              new: newTable ? `Mesa ${newTable.number}` : 'Sin asignación',
+            },
           }
         );
-        user.token = token;
-        return user;
-      } else {
-        throw new Error('Incorrect Usuario o Contraseña');
+
+        const result = {
+          ...updatedUser.toObject(),
+          assignedTable: updatedUser.assignedTableId,
+        };
+
+        pubsub.publish('USER_TABLE_ASSIGNMENT_UPDATED', {
+          userTableAssignmentUpdated: result,
+        });
+
+        return result;
+      } catch (error) {
+        throw new Error(error);
       }
     },
 
-    deleteUser: async (_, { _id }, context) => {
-      const deletedUser = await User.findByIdAndDelete(_id);
-      if (!deletedUser) throw new Error('User not found');
+    // Table mutations
+    createTable: async (_, { number, description, status }, { user }) => {
+      try {
+        const existingTable = await Table.findOne({ number });
+        if (existingTable) {
+          throw new Error('Ya existe una mesa con ese número');
+        }
 
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logUserAction('USER_DELETED', user, deletedUser);
+        const table = new Table({ number, description, status });
+        const savedTable = await table.save();
 
-      await pubsub.publish('USER_DELETED', {
-        userDeleted: deletedUser,
-      });
-      return deletedUser;
-    },
-    // * ...
+        // Log table creation
+        await logTableAction('TABLE_CREATED', user, savedTable, { number });
 
-    // * Mutation CUD resolvers for Table
-
-    createTable: async (_, args, context) => {
-      const table = new Table({
-        number: args.number,
-        description: args.description,
-        status: args.status,
-      });
-      const savedTable = await table.save();
-      pubsub.publish('TABLE_ADDED', { tableAdded: savedTable });
-
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logTableAction('TABLE_CREATED', user, savedTable, {
-        number: savedTable.number,
-        description: savedTable.description,
-        status: savedTable.status,
-      });
-
-      return savedTable;
+        pubsub.publish('TABLE_ADDED', { tableAdded: savedTable });
+        return savedTable;
+      } catch (error) {
+        throw new Error(error);
+      }
     },
 
-    deleteTable: async (_, { _id }, context) => {
-      const deletedTable = await Table.findByIdAndDelete(_id);
-      const deleteTablePersons = await Person.deleteMany({ tableId: _id });
-      const deleteFactions = await Faction.deleteMany({ tableId: _id });
-      if (!deletedTable) throw new Error('Table not found');
+    updateTable: async (
+      _,
+      { _id, number, description, status, userName, userRol },
+      { user }
+    ) => {
+      try {
+        const table = await Table.findById(_id);
+        if (!table) {
+          throw new Error('Table not found');
+        }
 
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logTableAction('TABLE_DELETED', user, deletedTable);
+        const oldStatus = table.status;
 
-      pubsub.publish('TABLE_DELETED', { tableDeleted: deletedTable });
-      return deletedTable;
+        table.number = number;
+        table.description = description;
+        table.status = status;
+
+        const updatedTable = await table.save();
+
+        // Log status change if status changed
+        if (oldStatus !== status) {
+          await logTableStatusChange(user, updatedTable, status, oldStatus);
+        } else {
+          // Log general table update
+          await logTableAction('TABLE_UPDATED', user, updatedTable, {
+            number,
+            description,
+          });
+        }
+
+        pubsub.publish('TABLE_CHANGED', { tableChange: updatedTable });
+        return updatedTable;
+      } catch (error) {
+        throw new Error(error);
+      }
     },
 
-    updateTable: async (_, args, context) => {
-      const oldTable = await Table.findById(args._id);
-      const updatedTable = await Table.findByIdAndUpdate(args._id, args, {
-        new: true,
-      });
+    deleteTable: async (_, { _id }, { user }) => {
+      try {
+        const table = await Table.findById(_id);
+        if (!table) {
+          throw new Error('Table not found');
+        }
 
-      // Get user from context first, then fallback to args
-      const user = context?.user || {
-        username: args.userName || 'system',
-        name: args.userName || 'system',
-        rol: args.userRol || 'system',
-      };
+        // Delete associated persons and factions
+        await Person.deleteMany({ tableId: _id });
+        await Faction.deleteMany({ tableId: _id });
 
-      if (oldTable && oldTable.status !== args.status) {
-        logTableStatusChange(user, updatedTable, args.status, oldTable.status);
-      } else if (oldTable) {
-        // Log other table updates (number, description)
+        await Table.findByIdAndDelete(_id);
+
+        // Log table deletion
+        await logTableAction('TABLE_DELETED', user, table);
+
+        pubsub.publish('TABLE_DELETED', { tableDeleted: table });
+        return table;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    // Person mutations
+    createPerson: async (_, args, { user }) => {
+      try {
+        const {
+          firstName,
+          lastName,
+          dni,
+          vote,
+          order,
+          address,
+          message,
+          affiliate,
+          referer,
+          driver,
+          tableId,
+          tableNumber,
+          userName,
+          userRol,
+        } = args;
+
+        const person = new Person({
+          firstName,
+          lastName,
+          dni,
+          vote,
+          order,
+          address,
+          message,
+          affiliate,
+          referer,
+          driver,
+          tableId,
+          tableNumber,
+        });
+
+        const savedPerson = await person.save();
+        const populatedPerson = await Person.findById(savedPerson._id).populate(
+          'tableId'
+        );
+
+        // Log person addition
+        await logPersonAdded(user, savedPerson, tableNumber);
+
+        pubsub.publish('PERSON_ADDED', {
+          personAdded: {
+            ...populatedPerson.toObject(),
+            table: populatedPerson.tableId,
+          },
+        });
+
+        return {
+          ...populatedPerson.toObject(),
+          table: populatedPerson.tableId,
+        };
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    updatePerson: async (_, args, { user }) => {
+      try {
+        const { _id, vote, userName, userRol, tableNumber, ...updateFields } =
+          args;
+
+        const person = await Person.findById(_id);
+        if (!person) {
+          throw new Error('Person not found');
+        }
+
+        const oldVote = person.vote;
+
+        // Update fields
+        Object.keys(updateFields).forEach((key) => {
+          if (updateFields[key] !== undefined && !key.startsWith('original')) {
+            person[key] = updateFields[key];
+          }
+        });
+
+        const updatedPerson = await person.save();
+        const populatedPerson = await Person.findById(
+          updatedPerson._id
+        ).populate('tableId');
+
+        // Log vote change if vote status changed
+        if (vote !== undefined && oldVote !== vote) {
+          await logPersonVote(user, updatedPerson, vote, tableNumber);
+
+          pubsub.publish('PERSON_VOTED', {
+            personVoted: {
+              ...populatedPerson.toObject(),
+              table: populatedPerson.tableId,
+            },
+          });
+        } else {
+          // Log general person update
+          const changes = {};
+          Object.keys(updateFields).forEach((key) => {
+            if (
+              !key.startsWith('original') &&
+              updateFields[key] !== undefined
+            ) {
+              const originalKey = `original${
+                key.charAt(0).toUpperCase() + key.slice(1)
+              }`;
+              if (
+                args[originalKey] !== undefined &&
+                args[originalKey] !== updateFields[key]
+              ) {
+                changes[key] = {
+                  old: args[originalKey],
+                  new: updateFields[key],
+                };
+              }
+            }
+          });
+
+          if (Object.keys(changes).length > 0) {
+            await logAction(
+              'PERSON_UPDATED',
+              user,
+              {
+                type: 'person',
+                id: updatedPerson._id,
+                identifier: `${updatedPerson.lastName}, ${updatedPerson.firstName} (DNI: ${updatedPerson.dni})`,
+                order: updatedPerson.order,
+                tableNumber: updatedPerson.tableNumber,
+              },
+              changes
+            );
+          }
+
+          pubsub.publish('PERSON_UPDATED', {
+            personUpdated: {
+              ...populatedPerson.toObject(),
+              table: populatedPerson.tableId,
+            },
+          });
+        }
+
+        return {
+          ...populatedPerson.toObject(),
+          table: populatedPerson.tableId,
+        };
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    deletePerson: async (_, { _id }, { user }) => {
+      try {
+        const person = await Person.findById(_id).populate('tableId');
+        if (!person) {
+          throw new Error('Person not found');
+        }
+
+        await Person.findByIdAndDelete(_id);
+
+        // Log person deletion
+        await logPersonDeleted(user, person);
+
+        pubsub.publish('PERSON_DELETED', {
+          personDeleted: {
+            ...person.toObject(),
+            table: person.tableId,
+          },
+        });
+
+        return {
+          ...person.toObject(),
+          table: person.tableId,
+        };
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    setMultipleRecord: async (_, { data }, { user }) => {
+      try {
+        const records = [];
+        const personNames = [];
+
+        for (const record of data) {
+          // Find or create table
+          let table = await Table.findOne({
+            number: parseInt(record.tableNumber),
+          });
+          if (!table) {
+            table = new Table({
+              number: parseInt(record.tableNumber),
+              description: '',
+              status: 'Abierta',
+            });
+            await table.save();
+          }
+
+          const person = new Person({
+            firstName: record.firstName,
+            lastName: record.lastName,
+            dni: record.dni,
+            vote: record.vote,
+            order: record.order,
+            address: record.address,
+            message: record.message,
+            affiliate: record.affiliate,
+            referer: record.referer,
+            tableId: table._id,
+            tableNumber: table.number,
+          });
+
+          const savedPerson = await person.save();
+          records.push(savedPerson);
+          personNames.push(
+            `${record.lastName}, ${record.firstName} (DNI: ${record.dni})`
+          );
+        }
+
+        // Log bulk person addition
+        await logAction(
+          'BULK_PERSONS_ADDED',
+          user,
+          {
+            type: 'table',
+            identifier: `Mesa #${data[0]?.tableNumber}`,
+          },
+          {
+            count: records.length,
+            persons: personNames,
+          }
+        );
+
+        pubsub.publish('MULTIPLE_PERSONS_ADDED', {
+          multiplePersonsAdded: 'success',
+        });
+        return 'success';
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    setMassiveRecord: async (_, { data }, { user }) => {
+      try {
+        const tablesCreated = new Set();
+        const personsAdded = [];
+        const personNames = [];
+
+        for (const record of data) {
+          // Find or create table
+          let table = await Table.findOne({
+            number: parseInt(record.tableNumber),
+          });
+          if (!table) {
+            table = new Table({
+              number: parseInt(record.tableNumber),
+              description: '',
+              status: 'Abierta',
+            });
+            await table.save();
+            tablesCreated.add(table.number);
+          }
+
+          const person = new Person({
+            firstName: record.firstName,
+            lastName: record.lastName,
+            dni: record.dni,
+            vote: false,
+            order: record.order,
+            address: record.address,
+            affiliate: record.affiliate,
+            referer: record.referer,
+            driver: record.driver,
+            tableId: table._id,
+            tableNumber: table.number,
+          });
+
+          const savedPerson = await person.save();
+          personsAdded.push(savedPerson);
+          personNames.push(
+            `${record.lastName}, ${record.firstName} (DNI: ${record.dni})`
+          );
+        }
+
+        // Log massive data import
+        await logAction(
+          'MASSIVE_DATA_IMPORT',
+          user,
+          {
+            type: 'system',
+            identifier: 'Sistema',
+          },
+          {
+            tablesCreated: tablesCreated.size,
+            personsAdded: personsAdded.length,
+            count: personsAdded.length,
+            persons: personNames,
+          }
+        );
+
+        pubsub.publish('MULTIPLE_PERSONS_ADDED', {
+          multiplePersonsAdded: 'success',
+        });
+        return 'success';
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    // Faction mutations
+    createFactionConfig: async (_, { name, color, position }, { user }) => {
+      try {
+        const factionConfig = new FactionConfig({ name, color, position });
+        const savedConfig = await factionConfig.save();
+
+        // Log faction config creation
+        await logFactionAction('FACTION_CONFIG_CREATED', user, savedConfig, {
+          name,
+        });
+
+        pubsub.publish('FACTION_CONFIG_ADDED', {
+          factionConfigAdded: savedConfig,
+        });
+        return savedConfig;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    updateFactionConfig: async (
+      _,
+      { _id, name, color, position },
+      { user }
+    ) => {
+      try {
+        const factionConfig = await FactionConfig.findById(_id);
+        if (!factionConfig) {
+          throw new Error('Faction config not found');
+        }
+
+        const oldName = factionConfig.name;
+        const oldColor = factionConfig.color;
+        const oldPosition = factionConfig.position;
+
+        factionConfig.name = name;
+        factionConfig.color = color;
+        factionConfig.position = position;
+
+        const updatedConfig = await factionConfig.save();
+
+        // Log faction config update
         const changes = {};
-        if (oldTable.number !== args.number)
-          changes.number = { old: oldTable.number, new: args.number };
-        if (oldTable.description !== args.description)
-          changes.description = {
-            old: oldTable.description,
-            new: args.description,
-          };
+        if (oldName !== name) changes.name = { old: oldName, new: name };
+        if (oldColor !== color) changes.color = { old: oldColor, new: color };
+        if (oldPosition !== position)
+          changes.position = { old: oldPosition, new: position };
 
-        if (Object.keys(changes).length > 0) {
-          logTableAction('TABLE_UPDATED', user, updatedTable, changes);
-        }
+        await logFactionAction(
+          'FACTION_CONFIG_UPDATED',
+          user,
+          updatedConfig,
+          changes
+        );
+
+        pubsub.publish('FACTION_CONFIG_UPDATE', {
+          factionConfigUpdate: updatedConfig,
+        });
+        return updatedConfig;
+      } catch (error) {
+        throw new Error(error);
       }
-
-      if (!updatedTable) throw new Error('Table not found');
-      pubsub.publish('TABLE_CHANGED', { tableChange: updatedTable });
-      return updatedTable;
     },
 
-    // * ...
-
-    // * Mutation CUD resolvers for Faction
-    createFactionConfig: async (_, { name, color, position }, context) => {
-      const factionConfig = new FactionConfig({
-        name,
-        color,
-        position,
-      });
-      const factionConfigSaved = await factionConfig.save();
-      pubsub.publish('FACTION_CONFIG_ADDED', {
-        factionConfigAdded: factionConfigSaved,
-      });
-
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logFactionAction('FACTION_CONFIG_CREATED', user, factionConfigSaved, {
-        name: factionConfigSaved.name,
-        color: factionConfigSaved.color,
-        position: factionConfigSaved.position,
-      });
-
-      return factionConfigSaved;
-    },
-
-    deleteFactionConfig: async (_, { _id }, context) => {
-      const deletedFactionConfig = await FactionConfig.findByIdAndDelete(_id);
-      if (!deletedFactionConfig) throw new Error('Faction Config not found');
-
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logFactionAction('FACTION_CONFIG_DELETED', user, deletedFactionConfig);
-
-      pubsub.publish('FACTION_CONFIG_DELETED', {
-        factionConfigDeleted: deletedFactionConfig,
-      });
-      return deletedFactionConfig;
-    },
-
-    updateFactionConfig: async (_, args, context) => {
-      const oldFactionConfig = await FactionConfig.findById(args._id);
-      const updatedFactionConfig = await FactionConfig.findByIdAndUpdate(
-        args._id,
-        args,
-        {
-          new: true,
+    deleteFactionConfig: async (_, { _id }, { user }) => {
+      try {
+        const factionConfig = await FactionConfig.findById(_id);
+        if (!factionConfig) {
+          throw new Error('Faction config not found');
         }
-      );
-      if (!updatedFactionConfig) throw new Error('FactionConfig not found');
-      pubsub.publish('FACTION_CONFIG_UPDATE', {
-        factionConfigUpdate: updatedFactionConfig,
-      });
 
-      // Log the changes made
-      const changes = {};
-      if (oldFactionConfig) {
-        if (oldFactionConfig.name !== args.name) {
-          changes.name = { old: oldFactionConfig.name, new: args.name };
-        }
-        if (oldFactionConfig.color !== args.color) {
-          changes.color = { old: oldFactionConfig.color, new: args.color };
-        }
-        if (oldFactionConfig.position !== args.position) {
-          changes.position = {
-            old: oldFactionConfig.position,
-            new: args.position,
-          };
-        }
+        // Delete associated factions
+        await Faction.deleteMany({ configId: _id });
+        await FactionConfig.findByIdAndDelete(_id);
+
+        // Log faction config deletion
+        await logFactionAction('FACTION_CONFIG_DELETED', user, factionConfig);
+
+        pubsub.publish('FACTION_CONFIG_DELETED', {
+          factionConfigDeleted: factionConfig,
+        });
+        return factionConfig;
+      } catch (error) {
+        throw new Error(error);
       }
-
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logFactionAction(
-        'FACTION_CONFIG_UPDATED',
-        user,
-        updatedFactionConfig,
-        changes
-      );
-
-      return updatedFactionConfig;
-    },
-
-    createFaction: async (_, { configId, votes, tableId }) => {
-      const tableFound = await Table.findById(tableId, {
-        new: true,
-      });
-
-      const configFound = await FactionConfig.findById(configId, {
-        new: true,
-      });
-
-      if (!tableFound) throw new Error('Table not found');
-      if (!configFound) throw new Error('Config not found');
-
-      const faction = new Faction({
-        configId,
-        votes,
-        tableId,
-      });
-      const factionSaved = await faction.save();
-      return factionSaved;
-    },
-
-    updateFaction: async (_, args) => {
-      const updatedFaction = await Faction.findByIdAndUpdate(args._id, args, {
-        new: true,
-      });
-      if (!updatedFaction) throw new Error('Faction not found');
-      return updatedFaction;
-    },
-
-    deleteFaction: async (_, { _id, status }) => {
-      const getDeletedFactions = await Faction.find({ tableId: _id });
-      const deleteFactions = await Faction.deleteMany({ tableId: _id });
-      if (!deleteFactions) throw new Error('Table without Factions not found');
-      pubsub.publish('FACTION_DELETE', {
-        factionDeleted: getDeletedFactions,
-      });
-      const updatedTable = await Table.findByIdAndUpdate(
-        _id,
-        { status },
-        {
-          new: true,
-        }
-      );
-      if (!updatedTable) throw new Error('Table not found');
-      pubsub.publish('TABLE_CHANGED', { tableChange: updatedTable });
-      return deleteFactions;
     },
 
     setMultipleFactionRecord: async (
       _,
       { data, userName, userRol, tableNumber },
-      context
+      { user }
     ) => {
-      let factionList = [];
-      data.map(async (faction) => {
-        const tableFound = await Table.findById(faction.table, {
-          new: true,
-        });
+      try {
+        const votes = [];
 
-        const configFound = await FactionConfig.findById(faction.config, {
-          new: true,
-        });
+        for (const record of data) {
+          const table = await Table.findById(record.table);
+          if (!table) continue;
 
-        if (!tableFound) throw new Error('Table not found');
-        if (!configFound) throw new Error('Faction Config not found');
+          const faction = new Faction({
+            configId: record.config,
+            votes: record.votes,
+            tableId: record.table,
+          });
 
-        const factionObj = new Faction({
-          configId: faction.config,
-          votes: faction.votes,
-          tableId: faction.table,
-        });
-        const factionSaved = await factionObj.save();
-        factionList.push(factionSaved);
-      });
+          const savedFaction = await faction.save();
+          votes.push({
+            faction: record.name,
+            votes: record.votes,
+          });
+        }
 
-      // Get table info for logging
-      const table = await Table.findById(data[0]?.table);
-      const user = context?.user || {
-        username: userName || 'system',
-        name: userName || 'system',
-        rol: userRol || 'system',
-      };
+        // Log votes sent
+        await logVotesSent(user, { number: tableNumber }, votes);
 
-      if (table) {
-        logVotesSent(user, table, data);
+        pubsub.publish('FACTION_VOTES_SEND', { factionVotesSend: 'success' });
+        return 'success';
+      } catch (error) {
+        throw new Error(error);
       }
-
-      pubsub.publish('FACTION_VOTES_SEND', {
-        factionVotesSend: `Faction Votes Set`,
-      });
-      return `Faction Records Saved`;
     },
 
     updateMultipleFactionRecord: async (
       _,
       { data, userName, userRol, tableNumber },
-      context
+      { user }
     ) => {
-      let factionList = [];
-      data.map(async (faction) => {
-        const updatedFaction = await Faction.findByIdAndUpdate(
-          faction._id,
-          faction,
-          {
-            new: true,
-          }
-        );
-        if (!updatedFaction) throw new Error('Faction not found');
+      try {
+        const votes = [];
 
-        factionList.push(updatedFaction);
-      });
+        for (const record of data) {
+          const faction = await Faction.findById(record._id);
+          if (!faction) continue;
 
-      // Get table info for logging
-      const user = context?.user || {
-        username: userName || 'system',
-        name: userName || 'system',
-        rol: userRol || 'system',
-      };
+          faction.votes = record.votes;
+          await faction.save();
 
-      if (data.length > 0) {
-        const firstFaction = await Faction.findById(data[0]._id).populate(
-          'tableId'
-        );
-        if (firstFaction && firstFaction.tableId) {
-          logVotesUpdated(user, firstFaction.tableId, data);
-        }
-      }
-
-      pubsub.publish('FACTION_VOTES_UPDATE', {
-        factionVotesUpdate: `Faction Votes Updated`,
-      });
-      return `Factions Updated Successfully`;
-    },
-    // * ...
-
-    setMultipleAffiliate: async (_, { data }, context) => {
-      let updatedCount = 0;
-      data.map(async (record) => {
-        const affiliateRecord = await Person.findOne({ dni: record.dni });
-        if (affiliateRecord) {
-          await Person.findByIdAndUpdate(affiliateRecord._id, {
-            affiliate: true,
+          votes.push({
+            faction: record.name,
+            votes: record.votes,
           });
-          updatedCount++;
         }
-      });
 
-      // Log affiliate update
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logAction(
-        'BULK_AFFILIATE_UPDATE',
-        user,
-        {
-          type: 'system',
-          identifier: 'Sistema',
-        },
-        {
-          count: updatedCount,
-          totalProcessed: data.length,
-        }
-      );
+        // Log votes updated
+        await logVotesUpdated(user, { number: tableNumber }, votes);
 
-      return `Records Updated Successfully`;
-    },
-    // * ...
-
-    // * Mutation CUD resolvers for Person
-
-    createPerson: async (_, args, context) => {
-      const tableFound = await Table.findById(args.tableId, {
-        new: true,
-      });
-
-      if (!tableFound) throw new Error('Table not found');
-
-      const person = new Person({
-        firstName: args.firstName,
-        lastName: args.lastName,
-        dni: args.dni,
-        vote: args.vote,
-        order: args.order,
-        address: args.address,
-        message: args.message,
-        affiliate: args.affiliate,
-        referer: args.referer,
-        tableId: args.tableId,
-        tableNumber: args.tableNumber,
-      });
-      const personSaved = await person.save();
-
-      // Get user from context first, then fallback to args
-      const user = context?.user || {
-        username: args.userName || 'system',
-        name: args.userName || 'system',
-        rol: args.userRol || 'system',
-      };
-
-      logPersonAdded(user, personSaved, args.tableNumber);
-
-      pubsub.publish('PERSON_ADDED', { personAdded: personSaved });
-      return personSaved;
-    },
-
-    setMultipleRecord: async (_, { data }, context) => {
-      let personList = [];
-      data.map(async (person) => {
-        const tableFound = await Table.findById(person.table, {
-          new: true,
+        pubsub.publish('FACTION_VOTES_UPDATE', {
+          factionVotesUpdate: 'success',
         });
-
-        if (!tableFound) throw new Error('Table not found');
-
-        const personObj = new Person({
-          firstName: person.firstName,
-          lastName: person.lastName,
-          dni: person.dni,
-          vote: person.vote,
-          order: person.order,
-          address: person.address,
-          message: person.message,
-          affiliate: person.affiliate,
-          referer: person.referer,
-          tableId: person.table,
-          tableNumber: person.tableNumber,
-        });
-        const personSaved = await personObj.save();
-        personList.push(personSaved);
-      });
-
-      // Log bulk person addition
-      if (data.length > 0) {
-        const tableNumber = data[0].tableNumber;
-        const user = context?.user || {
-          username: 'system',
-          name: 'system',
-          rol: 'system',
-        };
-        logAction(
-          'BULK_PERSONS_ADDED',
-          user,
-          {
-            type: 'table',
-            id: data[0].table,
-            identifier: `Mesa #${tableNumber}`,
-            number: tableNumber,
-          },
-          {
-            count: data.length,
-            persons: data.map(
-              (p) => `${p.lastName}, ${p.firstName} (${p.dni})`
-            ),
-          }
-        );
+        return 'success';
+      } catch (error) {
+        throw new Error(error);
       }
-
-      pubsub.publish('MULTIPLE_PERSONS_ADDED', {
-        multiplePersonsAdded: `${personList}`,
-      });
-      return `${personList}`;
     },
 
-    setMassiveRecord: async (_, { data }, context) => {
-      const tableNumbers = data.map(({ tableNumber }) => tableNumber);
-      const tablesUnique = [...new Set(tableNumbers)];
-      await Table.insertMany(
-        tablesUnique.map((number) => {
-          return {
-            number,
-            status: 'Abierta',
-            description: '',
-          };
-        })
-      )
-        .then(async () => {
-          const tables = await Table.find().sort({ number: 1 });
-          tables.map(async (table) => {
-            await Person.insertMany(
-              data
-                .map((person) => {
-                  if (person.tableNumber == table.number) {
-                    return {
-                      firstName: person.firstName,
-                      lastName: person.lastName,
-                      dni: person.dni.toString(),
-                      vote: false,
-                      order: person.order,
-                      address: person.address,
-                      message: '',
-                      affiliate: person.affiliate,
-                      referer: person.referer,
-                      tableId: table._id,
-                      tableNumber: person.tableNumber,
-                    };
-                  }
-                })
-                .filter(Boolean),
-              { ordered: true }
-            );
-          });
-        })
-        .then(pubsub.publish('DATA_SAVED', { data: 'Total Data Saved' }));
+    deleteFaction: async (_, { _id, status }, { user }) => {
+      try {
+        const deletedFactions = await Faction.find({ tableId: _id });
+        await Faction.deleteMany({ tableId: _id });
 
-      // Log massive data import
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logAction(
-        'MASSIVE_DATA_IMPORT',
-        user,
-        {
-          type: 'system',
-          identifier: 'Sistema',
-        },
-        {
-          tablesCreated: tablesUnique.length,
-          personsAdded: data.length,
-          tableNumbers: tablesUnique,
-        }
-      );
-    },
-
-    deletePerson: async (_, { _id }, context) => {
-      const deletedPerson = await Person.findByIdAndDelete(_id, {
-        new: true,
-      });
-      if (!deletedPerson) throw new Error('Person not found');
-
-      const user = context?.user || {
-        username: 'system',
-        name: 'system',
-        rol: 'system',
-      };
-      logPersonDeleted(user, deletedPerson);
-
-      pubsub.publish('PERSON_DELETED', { personDeleted: deletedPerson });
-      return deletedPerson;
-    },
-
-    updatePerson: async (_, args, context) => {
-      const oldPerson = await Person.findById(args._id);
-      if (!oldPerson) throw new Error('Person not found');
-
-      const updatedPerson = await Person.findByIdAndUpdate(args._id, args, {
-        new: true,
-      });
-      if (!updatedPerson) throw new Error('Person not found');
-
-      // Ensure we have a valid user object
-      const user = context?.user
-        ? {
-            username: context.user.username || 'system',
-            name: context.user.name || context.user.username || 'system',
-            rol: context.user.rol || 'system',
-          }
-        : {
-            username: args.userName || 'system',
-            name: args.userName || 'system',
-            rol: args.userRol || 'system',
-          };
-
-      // Initialize changes object
-      let changes = {};
-      let hasNonVoteChanges = false;
-      let isVoteOnlyUpdate = false;
-
-      // Check if this is a vote-only update (only vote, userName, userRol, tableNumber are provided)
-      const providedArgs = Object.keys(args).filter(
-        (key) => args[key] !== undefined && key !== '_id'
-      );
-      const voteOnlyArgs = ['vote', 'userName', 'userRol', 'tableNumber'];
-      isVoteOnlyUpdate =
-        providedArgs.every((arg) => voteOnlyArgs.includes(arg)) &&
-        args.vote !== undefined;
-
-      // Check what changed and log accordingly
-      if (
-        oldPerson &&
-        args.vote !== undefined &&
-        oldPerson.vote !== args.vote
-      ) {
-        // Vote status changed
-        logPersonVote(
-          user,
-          updatedPerson,
-          args.vote,
-          args.tableNumber || updatedPerson.tableNumber
-        );
-
-        // Only publish PERSON_VOTED for vote-only updates (from table details)
-        if (isVoteOnlyUpdate) {
-          pubsub.publish('PERSON_VOTED', { personVoted: updatedPerson });
-        }
-      } else if (oldPerson) {
-        // Other person data changed
-        if (
-          args.firstName !== undefined &&
-          oldPerson.firstName !== args.firstName
-        ) {
-          changes.firstName = { old: oldPerson.firstName, new: args.firstName };
-        }
-        if (
-          args.lastName !== undefined &&
-          oldPerson.lastName !== args.lastName
-        ) {
-          changes.lastName = { old: oldPerson.lastName, new: args.lastName };
-        }
-        if (args.dni !== undefined && oldPerson.dni !== args.dni) {
-          changes.dni = { old: oldPerson.dni, new: args.dni };
-        }
-        if (args.order !== undefined && oldPerson.order !== args.order) {
-          changes.order = { old: oldPerson.order, new: args.order };
-        }
-        if (args.address !== undefined && oldPerson.address !== args.address) {
-          changes.address = { old: oldPerson.address, new: args.address };
-        }
-        if (args.message !== undefined && oldPerson.message !== args.message) {
-          changes.message = { old: oldPerson.message, new: args.message };
-        }
-        if (
-          args.affiliate !== undefined &&
-          oldPerson.affiliate !== args.affiliate
-        ) {
-          changes.affiliate = { old: oldPerson.affiliate, new: args.affiliate };
-        }
-        if (args.referer !== undefined && oldPerson.referer !== args.referer) {
-          changes.referer = { old: oldPerson.referer, new: args.referer };
-        }
-        if (args.driver !== undefined && oldPerson.driver !== args.driver) {
-          changes.driver = { old: oldPerson.driver, new: args.driver };
+        if (status) {
+          await Table.findByIdAndUpdate(_id, { status });
         }
 
-        if (Object.keys(changes).length > 0) {
-          hasNonVoteChanges = true;
-          logAction(
-            'PERSON_UPDATED',
-            user,
-            {
-              type: 'person',
-              id: updatedPerson._id,
-              identifier: `${updatedPerson.lastName}, ${updatedPerson.firstName} (DNI: ${updatedPerson.dni})`,
-              order: updatedPerson.order,
-              tableNumber: args.tableNumber || updatedPerson.tableNumber,
-            },
-            changes
-          );
-        }
+        pubsub.publish('FACTION_DELETED', { factionDeleted: deletedFactions });
+        return { acknowledged: true, deletedCount: deletedFactions.length };
+      } catch (error) {
+        throw new Error(error);
       }
-
-      // Also publish a general person update event for non-vote changes
-      if (hasNonVoteChanges || !isVoteOnlyUpdate) {
-        pubsub.publish('PERSON_UPDATED', { personUpdated: updatedPerson });
-      }
-
-      return updatedPerson;
     },
   },
 
-  // * Query for searching parent data
-
-  Table: {
-    persons: async (parent) => {
-      // Only load persons when explicitly requested and limit the results
-      return await Person.find({ tableId: parent._id })
-        .sort({ order: 1 })
-        .limit(1000) // Prevent loading too many at once
-        .lean();
-    },
-    totalPersons: async (parent) => {
-      // Use cached value if available from aggregation
-      if (parent.totalPersons !== undefined) return parent.totalPersons;
-      return await Person.countDocuments({ tableId: parent._id });
-    },
-    voted: async (parent) => {
-      // Use cached value if available from aggregation
-      if (parent.voted !== undefined) return parent.voted;
-      return await Person.countDocuments({ tableId: parent._id, vote: true });
-    },
-    factions: async (parent) => {
-      return await Faction.find({ tableId: parent._id }).lean();
-    },
-  },
-  Person: {
-    table: async (parent) => {
-      // Use lean() for better performance when we don't need full Mongoose documents
-      return await Table.findById(parent.tableId).lean();
-    },
-  },
-  User: {
-    assignedTable: async (parent) => {
-      if (!parent.assignedTableId) return null;
-      return await Table.findById(parent.assignedTableId).lean();
-    },
-  },
-  Faction: {
-    config: async (parent) =>
-      await FactionConfig.findById(parent.configId).lean(),
-    table: async (parent) => await Table.findById(parent.tableId).lean(),
-  },
-
-  // * ...
-
-  // * Subscription resolvers
   Subscription: {
     personVoted: {
-      subscribe: () => pubsub.asyncIterator('PERSON_VOTED'),
+      subscribe: () => pubsub.asyncIterator(['PERSON_VOTED']),
     },
     personUpdated: {
-      subscribe: () => pubsub.asyncIterator('PERSON_UPDATED'),
+      subscribe: () => pubsub.asyncIterator(['PERSON_UPDATED']),
     },
     tableChange: {
-      subscribe: () => pubsub.asyncIterator('TABLE_CHANGED'),
+      subscribe: () => pubsub.asyncIterator(['TABLE_CHANGED']),
     },
     personAdded: {
-      subscribe: () => pubsub.asyncIterator('PERSON_ADDED'),
+      subscribe: () => pubsub.asyncIterator(['PERSON_ADDED']),
     },
     personDeleted: {
-      subscribe: () => pubsub.asyncIterator('PERSON_DELETED'),
+      subscribe: () => pubsub.asyncIterator(['PERSON_DELETED']),
     },
     tableAdded: {
-      subscribe: () => pubsub.asyncIterator('TABLE_ADDED'),
+      subscribe: () => pubsub.asyncIterator(['TABLE_ADDED']),
     },
     tableDeleted: {
-      subscribe: () => pubsub.asyncIterator('TABLE_DELETED'),
+      subscribe: () => pubsub.asyncIterator(['TABLE_DELETED']),
     },
     multiplePersonsAdded: {
-      subscribe: () => pubsub.asyncIterator('MULTIPLE_PERSONS_ADDED'),
+      subscribe: () => pubsub.asyncIterator(['MULTIPLE_PERSONS_ADDED']),
     },
     factionConfigAdded: {
-      subscribe: () => pubsub.asyncIterator('FACTION_CONFIG_ADDED'),
+      subscribe: () => pubsub.asyncIterator(['FACTION_CONFIG_ADDED']),
     },
     factionConfigDeleted: {
-      subscribe: () => pubsub.asyncIterator('FACTION_CONFIG_DELETED'),
-    },
-    factionVotesSend: {
-      subscribe: () => pubsub.asyncIterator('FACTION_VOTES_SEND'),
-    },
-    factionVotesUpdate: {
-      subscribe: () => pubsub.asyncIterator('FACTION_VOTES_UPDATE'),
+      subscribe: () => pubsub.asyncIterator(['FACTION_CONFIG_DELETED']),
     },
     factionConfigUpdate: {
-      subscribe: () => pubsub.asyncIterator('FACTION_CONFIG_UPDATE'),
+      subscribe: () => pubsub.asyncIterator(['FACTION_CONFIG_UPDATE']),
+    },
+    factionVotesSend: {
+      subscribe: () => pubsub.asyncIterator(['FACTION_VOTES_SEND']),
+    },
+    factionVotesUpdate: {
+      subscribe: () => pubsub.asyncIterator(['FACTION_VOTES_UPDATE']),
     },
     userAdded: {
-      subscribe: () => pubsub.asyncIterator('USER_ADDED'),
+      subscribe: () => pubsub.asyncIterator(['USER_ADDED']),
     },
     userDeleted: {
-      subscribe: () => pubsub.asyncIterator('USER_DELETED'),
+      subscribe: () => pubsub.asyncIterator(['USER_DELETED']),
     },
     userTableAssignmentUpdated: {
-      subscribe: () => pubsub.asyncIterator('USER_TABLE_ASSIGNMENT_UPDATED'),
+      subscribe: () => pubsub.asyncIterator(['USER_TABLE_ASSIGNMENT_UPDATED']),
     },
     factionDeleted: {
-      subscribe: () => pubsub.asyncIterator('FACTION_DELETE'),
-    },
-    alert: {
-      subscribe: () => pubsub.asyncIterator('ALERT'),
-    },
-    dataSaved: {
-      subscribe: () => pubsub.asyncIterator('DATA_SAVED'),
+      subscribe: () => pubsub.asyncIterator(['FACTION_DELETED']),
     },
   },
-  // * ...
 };

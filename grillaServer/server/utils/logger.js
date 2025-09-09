@@ -1,4 +1,5 @@
 import winston, { format, transports } from 'winston';
+import Log from '../models/Log.js';
 
 const logFormat = format.printf((info) => `${info.timestamp}: ${info.message}`);
 
@@ -10,12 +11,6 @@ export const logger = winston.createLogger({
     format.json()
   ),
   transports: [
-    new transports.File({
-      filename: './server/grillaLogs.log',
-      maxsize: 10485760, // 10MB
-      maxFiles: 5,
-      tailable: true,
-    }),
     // Console transport for development
     new transports.Console({
       format: format.combine(format.colorize(), format.simple()),
@@ -26,7 +21,7 @@ export const logger = winston.createLogger({
 });
 
 // Enhanced logging functions with structured data
-export const logAction = (
+export const logAction = async (
   action,
   user,
   target,
@@ -34,31 +29,45 @@ export const logAction = (
   metadata = {}
 ) => {
   const logData = {
-    message: generateLogMessage(action, user, target, changes),
+    timestamp: new Date(),
     level: 'info',
+    message: generateLogMessage(action, user, target, changes),
+    action,
+    user: {
+      id: user?.user_id || user?._id || user?.id || null,
+      username: user?.username || 'unknown',
+      name: user?.name || user?.username || 'unknown',
+      role: user?.rol || user?.role || 'unknown',
+    },
+    target: {
+      type: target?.type || 'unknown',
+      id: target?.id || null,
+      identifier: target?.identifier || null,
+      number: target?.number || null,
+      tableNumber: target?.tableNumber || null,
+      order: target?.order || null,
+    },
+    changes: changes || null,
     metadata: {
-      action,
-      user: {
-        id: user?.user_id || user?._id || user?.id || null,
-        username: user?.username || 'unknown',
-        name: user?.name || user?.username || 'unknown',
-        role: user?.rol || user?.role || 'unknown',
-      },
-      target: {
-        type: target?.type || 'unknown',
-        id: target?.id || null,
-        identifier: target?.identifier || null,
-        number: target?.number || null,
-        tableNumber: target?.tableNumber || null,
-        order: target?.order || null,
-      },
-      changes: changes || null,
-      timestamp: new Date().toISOString(),
       ...metadata,
     },
   };
 
-  logger.info(logData);
+  try {
+    // Save to database
+    const logEntry = new Log(logData);
+    await logEntry.save();
+
+    // Also log to console for development
+    logger.info(logData);
+  } catch (error) {
+    console.error('Error saving log to database:', error);
+    // Fallback to console logging
+    logger.error('Failed to save log to database', {
+      logData,
+      error: error.message,
+    });
+  }
 };
 
 // Generate human-readable log messages
@@ -113,8 +122,8 @@ const generateLogMessage = (action, user, target, changes) => {
 };
 
 // Specific logging functions for different actions
-export const logPersonVote = (user, person, voteStatus, tableNumber) => {
-  logAction(
+export const logPersonVote = async (user, person, voteStatus, tableNumber) => {
+  await logAction(
     voteStatus ? 'PERSON_VOTE_MARKED' : 'PERSON_VOTE_UNMARKED',
     user,
     {
@@ -131,8 +140,8 @@ export const logPersonVote = (user, person, voteStatus, tableNumber) => {
   );
 };
 
-export const logPersonAdded = (user, person, tableNumber) => {
-  logAction(
+export const logPersonAdded = async (user, person, tableNumber) => {
+  await logAction(
     'PERSON_ADDED',
     user,
     {
@@ -151,25 +160,23 @@ export const logPersonAdded = (user, person, tableNumber) => {
   );
 };
 
-export const logPersonDeleted = (user, person) => {
-  logAction('PERSON_DELETED', user, {
+export const logPersonDeleted = async (user, person) => {
+  await logAction('PERSON_DELETED', user, {
     type: 'person',
     id: person._id || person.id,
     identifier: `${person.lastName}, ${person.firstName} (DNI: ${person.dni})`,
     order: person.order,
-    assignedTable: {
-      old: updatedUser.assignedTableId
-        ? `Mesa ${updatedUser.assignedTableId.number}`
-        : 'Fiscal General',
-      new: assignedTableId
-        ? `Mesa ${updatedUser.assignedTableId.number}`
-        : 'Fiscal General',
-    },
+    tableNumber: person.tableNumber,
   });
 };
 
-export const logTableStatusChange = (user, table, newStatus, oldStatus) => {
-  logAction(
+export const logTableStatusChange = async (
+  user,
+  table,
+  newStatus,
+  oldStatus
+) => {
+  await logAction(
     'TABLE_STATUS_CHANGED',
     user,
     {
@@ -185,8 +192,8 @@ export const logTableStatusChange = (user, table, newStatus, oldStatus) => {
   );
 };
 
-export const logVotesSent = (user, table, votes) => {
-  logAction(
+export const logVotesSent = async (user, table, votes) => {
+  await logAction(
     'VOTES_SENT',
     user,
     {
@@ -204,8 +211,8 @@ export const logVotesSent = (user, table, votes) => {
   );
 };
 
-export const logVotesUpdated = (user, table, votes) => {
-  logAction(
+export const logVotesUpdated = async (user, table, votes) => {
+  await logAction(
     'VOTES_UPDATED',
     user,
     {
@@ -223,13 +230,13 @@ export const logVotesUpdated = (user, table, votes) => {
   );
 };
 
-export const logUserAction = (
+export const logUserAction = async (
   action,
   performedBy,
   targetUser,
   changes = null
 ) => {
-  logAction(
+  await logAction(
     action,
     performedBy,
     {
@@ -242,8 +249,8 @@ export const logUserAction = (
   );
 };
 
-export const logTableAction = (action, user, table, changes = null) => {
-  logAction(
+export const logTableAction = async (action, user, table, changes = null) => {
+  await logAction(
     action,
     user,
     {
@@ -256,8 +263,13 @@ export const logTableAction = (action, user, table, changes = null) => {
   );
 };
 
-export const logFactionAction = (action, user, faction, changes = null) => {
-  logAction(
+export const logFactionAction = async (
+  action,
+  user,
+  faction,
+  changes = null
+) => {
+  await logAction(
     action,
     user,
     {
