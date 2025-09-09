@@ -4,7 +4,7 @@ import { useQuery } from '@apollo/client';
 import { exportQuery } from '../graphql/admin';
 
 export const Export = () => {
-  const { loading, error, data, refetch } = useQuery(exportQuery);
+  const { loading, error, data } = useQuery(exportQuery);
 
   const ExcelFile = ReactExport.ExcelFile;
   const ExcelSheet = ReactExport.ExcelFile.ExcelSheet;
@@ -17,7 +17,7 @@ export const Export = () => {
 
   const persons = [];
   data?.tables?.forEach((table) => {
-    table.persons.forEach((person) => {
+    table?.persons?.forEach((person) => {
       const newPerson = {
         order: person.order,
         firstName: person.firstName,
@@ -29,6 +29,7 @@ export const Export = () => {
         message: person.message,
         referer: person.referer,
         driver: person.driver,
+        updatedAt: person.updatedAt,
       };
       persons.push(newPerson);
     });

@@ -140,13 +140,14 @@ export const exportQuery = gql`
       voted
       totalPersons
       factions {
+        _id
+        votes
         config {
           _id
           color
           name
           position
         }
-        votes
       }
       persons {
         _id
@@ -161,11 +162,12 @@ export const exportQuery = gql`
         affiliate
         referer
         driver
+        updatedAt
       }
     }
     logs {
       logs {
-        id: _id
+        id
         timestamp
         level
         message

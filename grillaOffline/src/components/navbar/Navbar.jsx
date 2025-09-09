@@ -123,22 +123,18 @@ export default function Navbar() {
               ) : (
                 <></>
               )}
-              {importMode === 'multi-file' ? (
-                <li className='nav-item'>
-                  <a
-                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
-                    href={`${
-                      import.meta.env.VITE_HASH_BROWSER === true
-                        ? '#/'
-                        : `${URL}/`
-                    }base`}
-                  >
-                    <span className='ml-2'>Base</span>
-                  </a>
-                </li>
-              ) : (
-                <></>
-              )}
+              <li className='nav-item'>
+                <a
+                  className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
+                  href={`${
+                    import.meta.env.VITE_HASH_BROWSER === true
+                      ? '#/'
+                      : `${URL}/`
+                  }base`}
+                >
+                  <span className='ml-2'>Base</span>
+                </a>
+              </li>
               {importMode === 'single' ? (
                 <Menu
                   as='div'
