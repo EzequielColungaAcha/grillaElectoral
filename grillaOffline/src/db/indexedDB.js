@@ -48,9 +48,7 @@ class GrillaDB {
 
         // Persons store
         if (!db.objectStoreNames.contains('persons')) {
-          const personStore = db.createObjectStore('persons', {
-            keyPath: '_id',
-          });
+          const personStore = db.createObjectStore('persons', { keyPath: '_id' });
           personStore.createIndex('tableId', 'tableId');
           personStore.createIndex('dni', 'dni');
           personStore.createIndex('tableNumber', 'tableNumber');
@@ -71,9 +69,7 @@ class GrillaDB {
 
         // Factions store
         if (!db.objectStoreNames.contains('factions')) {
-          const factionStore = db.createObjectStore('factions', {
-            keyPath: '_id',
-          });
+          const factionStore = db.createObjectStore('factions', { keyPath: '_id' });
           factionStore.createIndex('tableId', 'tableId');
           factionStore.createIndex('configId', 'configId');
         } else if (oldVersion < 4) {
@@ -90,9 +86,7 @@ class GrillaDB {
 
         // FactionConfig store
         if (!db.objectStoreNames.contains('factionConfigs')) {
-          const factionConfigStore = db.createObjectStore('factionConfigs', {
-            keyPath: '_id',
-          });
+          const factionConfigStore = db.createObjectStore('factionConfigs', { keyPath: '_id' });
           factionConfigStore.createIndex('position', 'position');
         } else if (oldVersion < 5) {
           // Ensure indexes exist on existing store
@@ -114,6 +108,12 @@ class GrillaDB {
         // Export info store
         if (!db.objectStoreNames.contains('exportInfo')) {
           db.createObjectStore('exportInfo', { keyPath: '_id' });
+        }
+
+        // Multi-file import store
+        if (!db.objectStoreNames.contains('multiFileImport')) {
+          const multiFileStore = db.createObjectStore('multiFileImport', { keyPath: '_id' });
+          multiFileStore.createIndex('dni', 'dni');
         }
 
         // Update existing stores if needed
@@ -144,7 +144,7 @@ class GrillaDB {
   async add(storeName, data) {
     const transaction = this.db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
-
+    
     if (!data._id) {
       data._id = this.generateId();
     }
@@ -161,7 +161,7 @@ class GrillaDB {
   async update(storeName, data) {
     const transaction = this.db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
-
+    
     data.updatedAt = new Date().toISOString();
 
     return new Promise((resolve, reject) => {
@@ -244,7 +244,7 @@ class GrillaDB {
       console.log('Data structure:', Object.keys(data));
       console.log('Export info:', data.exportInfo);
       console.log('Logs data:', data.logs);
-
+      
       // Clear existing data
       await this.clear('users');
       await this.clear('tables');
@@ -252,12 +252,27 @@ class GrillaDB {
       await this.clear('factions');
       await this.clear('factionConfigs');
       await this.clear('logs');
+      await this.clear('exportInfo');
+
+      // Handle multi-file import
+      if (data.multiFileImport) {
+        console.log('Processing multi-file import...');
+        
+        // Store the multi-file data
+        await this.add('multiFileImport', {
+          _id: 'multi_file_data',
+          ...data.multiFileImport
+        });
+        
+        console.log('Multi-file import completed');
+        return true;
+      }
 
       // Store export info if available
       if (data.exportInfo) {
         await this.add('exportInfo', {
           _id: 'export_metadata',
-          ...data.exportInfo,
+          ...data.exportInfo
         });
       }
 
@@ -280,7 +295,7 @@ class GrillaDB {
             _id: table._id,
             number: table.number,
             description: table.description,
-            status: table.status,
+            status: table.status
           };
           await this.add('tables', tableData);
 
@@ -290,7 +305,7 @@ class GrillaDB {
               // Ensure person has the correct tableId from its parent table
               const personData = {
                 ...person,
-                tableId: table._id, // Set tableId to the parent table's _id
+                tableId: table._id  // Set tableId to the parent table's _id
               };
               await this.add('persons', personData);
             }
@@ -302,13 +317,10 @@ class GrillaDB {
               // Check if faction config already exists by name, color, and position
               const configKey = `${faction.config.name}-${faction.config.color}-${faction.config.position}`;
               let configId = importedConfigs.get(configKey);
-
+              
               if (!configId) {
                 // Import new faction config
-                const savedConfig = await this.add(
-                  'factionConfigs',
-                  faction.config
-                );
+                const savedConfig = await this.add('factionConfigs', faction.config);
                 configId = savedConfig._id;
                 importedConfigs.set(configKey, configId);
               }
@@ -317,7 +329,7 @@ class GrillaDB {
                 _id: faction._id,
                 configId: configId,
                 votes: faction.votes,
-                tableId: table._id,
+                tableId: table._id
               };
               await this.add('factions', factionData);
             }
@@ -326,32 +338,26 @@ class GrillaDB {
       }
 
       // Import logs
-      console.log('Importing logs from entries:', data.logs.entries.length);
+        console.log('Importing logs from entries:', data.logs.entries.length);
       console.log('Checking logs data structure...');
       console.log('data.logs exists:', !!data.logs);
-      console.log(
-        'data.logs.entries exists:',
-        !!(data.logs && data.logs.entries)
-      );
+      console.log('data.logs.entries exists:', !!(data.logs && data.logs.entries));
       console.log('data.logs.logs exists:', !!(data.logs && data.logs.logs));
-
+      
       if (data.logs && data.logs.entries && Array.isArray(data.logs.entries)) {
-        console.log(
-          'Importing logs from entries array:',
-          data.logs.entries.length
-        );
+        console.log('Importing logs from entries array:', data.logs.entries.length);
         for (const log of data.logs.entries) {
           // Clean up GraphQL typename fields
           const cleanLog = { ...log };
           delete cleanLog.__typename;
           if (cleanLog.user) delete cleanLog.user.__typename;
           if (cleanLog.target) delete cleanLog.target.__typename;
-
+          
           // Ensure log has required fields
           if (!cleanLog.id) {
             cleanLog.id = this.generateId();
           }
-
+          
           console.log('Adding log:', cleanLog.id, cleanLog.action);
           await this.add('logs', cleanLog);
         }
@@ -363,12 +369,12 @@ class GrillaDB {
           delete cleanLog.__typename;
           if (cleanLog.user) delete cleanLog.user.__typename;
           if (cleanLog.target) delete cleanLog.target.__typename;
-
+          
           // Ensure log has required fields
           if (!cleanLog.id) {
             cleanLog.id = this.generateId();
           }
-
+          
           console.log('Adding log:', cleanLog.id, cleanLog.action);
           await this.add('logs', cleanLog);
         }
@@ -380,12 +386,12 @@ class GrillaDB {
           delete cleanLog.__typename;
           if (cleanLog.user) delete cleanLog.user.__typename;
           if (cleanLog.target) delete cleanLog.target.__typename;
-
+          
           // Ensure log has required fields
           if (!cleanLog.id) {
             cleanLog.id = this.generateId();
           }
-
+          
           console.log('Adding log:', cleanLog.id, cleanLog.action);
           await this.add('logs', cleanLog);
         }

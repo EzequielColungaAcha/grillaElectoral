@@ -1,9 +1,8 @@
-import { useContext } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/simpleAuthContext';
 import { Spin as Hamburger } from 'hamburger-react';
 import { useNavigate } from 'react-router-dom';
-import { PRIVACY, URL } from '../../config';
+import { URL } from '../../config';
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
@@ -13,10 +12,16 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function Navbar({ fixed }) {
+export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [importMode, setImportMode] = useState('single');
+
+  useEffect(() => {
+    const mode = localStorage.getItem('importMode') || 'single';
+    setImportMode(mode);
+  }, []);
 
   const onLogout = () => {
     logout();
@@ -54,7 +59,7 @@ export default function Navbar({ fixed }) {
             id='example-navbar-danger'
           >
             <ul className='flex flex-col lg:flex-row list-none lg:ml-auto'>
-              {PRIVACY.mesas.includes(user.rol) ? (
+              {importMode === 'single' ? (
                 <li className='nav-item'>
                   <a
                     className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
@@ -70,7 +75,7 @@ export default function Navbar({ fixed }) {
               ) : (
                 <></>
               )}
-              {PRIVACY.prensa.includes(user.rol) ? (
+              {importMode === 'single' ? (
                 <li className='nav-item'>
                   <a
                     className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
@@ -86,8 +91,7 @@ export default function Navbar({ fixed }) {
               ) : (
                 <></>
               )}
-              {PRIVACY.base.includes(user.rol) ||
-              PRIVACY.prensa.includes(user.rol) ? (
+              {importMode === 'single' ? (
                 <li className='nav-item'>
                   <a
                     className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
@@ -103,8 +107,7 @@ export default function Navbar({ fixed }) {
               ) : (
                 <></>
               )}
-              {PRIVACY.base.includes(user.rol) ||
-              PRIVACY.prensa.includes(user.rol) ? (
+              {importMode === 'single' ? (
                 <li className='nav-item'>
                   <a
                     className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
@@ -120,7 +123,7 @@ export default function Navbar({ fixed }) {
               ) : (
                 <></>
               )}
-              {PRIVACY.base.includes(user.rol) ? (
+              {importMode === 'multi-file' ? (
                 <li className='nav-item'>
                   <a
                     className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
@@ -136,7 +139,7 @@ export default function Navbar({ fixed }) {
               ) : (
                 <></>
               )}
-              {PRIVACY.admin.includes(user.rol) ? (
+              {importMode === 'single' ? (
                 <Menu
                   as='div'
                   className='relative inline-block text-right ml-2'

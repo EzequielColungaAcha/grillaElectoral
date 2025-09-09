@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
       setUser({
         name: 'Admin User',
         rol: 'admin',
-        username: 'admin',
+        username: 'admin'
       });
     }
     setIsLoading(false);
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     setUser({
       name: 'Admin User',
       rol: 'admin',
-      username: 'admin',
+      username: 'admin'
     });
     localStorage.setItem('isAuthenticated', 'true');
   };
@@ -53,29 +53,29 @@ export const AuthProvider = ({ children }) => {
         await db.clear('factionConfigs');
         await db.clear('logs');
         await db.clear('exportInfo');
+        await db.clear('multiFileImport');
         console.log('Database cleared on logout');
       } catch (error) {
         console.error('Error clearing database on logout:', error);
       }
     }
-
+    
     setIsAuthenticated(false);
     setUser(null);
     localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('importMode');
   };
 
   if (isLoading) {
     return (
-      <div className='flex justify-center items-center h-screen'>
-        <div className='animate-spin rounded-full h-32 w-32 border-b-2 border-white'></div>
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>
       </div>
     );
   }
 
   return (
-    <AuthContext.Provider
-      value={{ user, isAuthenticated, login, logout, isLoading }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

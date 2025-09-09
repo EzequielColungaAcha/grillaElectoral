@@ -21,9 +21,16 @@ import { Escrutinio } from './pages/Escrutinio.jsx';
 import { AdminLogs } from './pages/AdminLogs.jsx';
 import Navbar from './components/navbar/Navbar.jsx';
 import { useAuth } from './context/simpleAuthContext.jsx';
+import { useState, useEffect } from 'react';
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
+  const [importMode, setImportMode] = useState('single');
+
+  useEffect(() => {
+    const mode = localStorage.getItem('importMode') || 'single';
+    setImportMode(mode);
+  }, []);
 
   return (
     <>
@@ -67,7 +74,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/base`}
               element={
-                <ProtectedRoute privacy={PRIVACY.base}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? PRIVACY.everyone : PRIVACY.base}>
                   <Base />
                 </ProtectedRoute>
               }
@@ -75,7 +82,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/estado`}
               element={
-                <ProtectedRoute privacy={PRIVACY.base + PRIVACY.prensa}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.base + PRIVACY.prensa}>
                   <Estado />
                 </ProtectedRoute>
               }
@@ -83,7 +90,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/escrutinio`}
               element={
-                <ProtectedRoute privacy={PRIVACY.base + PRIVACY.prensa}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.base + PRIVACY.prensa}>
                   <Escrutinio />
                 </ProtectedRoute>
               }
@@ -91,7 +98,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/prensa`}
               element={
-                <ProtectedRoute privacy={PRIVACY.prensa}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.prensa}>
                   <Prensa />
                 </ProtectedRoute>
               }
@@ -99,7 +106,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/tables/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminTables />
                 </ProtectedRoute>
               }
@@ -107,7 +114,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/tables/:id`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminTableDetails />
                 </ProtectedRoute>
               }
@@ -115,7 +122,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/partidos/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminFactions />
                 </ProtectedRoute>
               }
@@ -123,7 +130,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/usuarios/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminUsers />
                 </ProtectedRoute>
               }
@@ -131,7 +138,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/exportar/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <Export />
                 </ProtectedRoute>
               }
@@ -139,7 +146,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/logs/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminLogs />
                 </ProtectedRoute>
               }
@@ -186,7 +193,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/base`}
               element={
-                <ProtectedRoute privacy={PRIVACY.base}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? PRIVACY.everyone : PRIVACY.base}>
                   <Base />
                 </ProtectedRoute>
               }
@@ -194,7 +201,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/estado`}
               element={
-                <ProtectedRoute privacy={PRIVACY.base + PRIVACY.prensa}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.base + PRIVACY.prensa}>
                   <Estado />
                 </ProtectedRoute>
               }
@@ -202,7 +209,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/escrutinio`}
               element={
-                <ProtectedRoute privacy={PRIVACY.base + PRIVACY.prensa}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.base + PRIVACY.prensa}>
                   <Escrutinio />
                 </ProtectedRoute>
               }
@@ -210,7 +217,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/prensa`}
               element={
-                <ProtectedRoute privacy={PRIVACY.prensa}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.prensa}>
                   <Prensa />
                 </ProtectedRoute>
               }
@@ -218,7 +225,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/tables/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminTables />
                 </ProtectedRoute>
               }
@@ -226,7 +233,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/tables/:id`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminTableDetails />
                 </ProtectedRoute>
               }
@@ -234,7 +241,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/partidos/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminFactions />
                 </ProtectedRoute>
               }
@@ -242,7 +249,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/usuarios/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminUsers />
                 </ProtectedRoute>
               }
@@ -250,7 +257,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/exportar/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <Export />
                 </ProtectedRoute>
               }
@@ -258,7 +265,7 @@ const AppContent = () => {
             <Route
               path={`${URL}/admin/logs/`}
               element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
+                <ProtectedRoute privacy={importMode === 'multi-file' ? [] : PRIVACY.admin}>
                   <AdminLogs />
                 </ProtectedRoute>
               }

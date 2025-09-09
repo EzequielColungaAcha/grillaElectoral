@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useCallback } from 'react';
 import { useDB } from '../context/dbContext.jsx';
-import { MdOutlineHowToVote, MdOutlineDrafts } from 'react-icons/md';
-import { BsSendCheck } from 'react-icons/bs';
 import Table from '../components/spectatorComps/Table.jsx';
+import { MultiFileTable } from '../components/spectatorComps/MultiFileTable.jsx';
 import { InfoModal } from '../components/modals/InfoModal';
 import { FormModal } from '../components/modals/FormModal';
 import { useState as useStateHook } from 'react';
@@ -12,6 +11,8 @@ import { useAuth } from '../context/simpleAuthContext';
 
 export const Base = () => {
   const { user } = useAuth();
+  const [importMode, setImportMode] = useState('single');
+  const [multiFileData, setMultiFileData] = useState(null);
   const [search, setSearch] = useState('');
   const [selectedSearch, setSelectedSearch] = useState('all');
   const [voteSearch, setVoteSearch] = useState('all');
@@ -27,10 +28,28 @@ export const Base = () => {
   const [showEditMessageModal, setShowEditMessageModal] = useState(false);
   const [availableReferers, setAvailableReferers] = useState([]);
 
-  const { getAllRecords, subscribe, isDBReady, updateRecord } = useDB();
+  const { getAllRecords, subscribe, isDBReady, updateRecord, getRecord } = useDB();
 
+  // Check import mode on component mount
+  useEffect(() => {
+    const mode = localStorage.getItem('importMode') || 'single';
+    setImportMode(mode);
+  }, []);
+
+  const loadMultiFileData = useCallback(async () => {
+    if (!isDBReady || importMode !== 'multi-file') return;
+
+    try {
+      const multiFileRecord = await getRecord('multiFileImport', 'multi_file_data');
+      if (multiFileRecord) {
+        setMultiFileData(multiFileRecord);
+      }
+    } catch (error) {
+      console.error('Error loading multi-file data:', error);
+    }
+  }, [isDBReady, importMode, getRecord]);
   const loadData = useCallback(async () => {
-    if (!isDBReady) return;
+    if (!isDBReady || importMode === 'multi-file') return;
 
     try {
       setLoading(true);
@@ -56,11 +75,13 @@ export const Base = () => {
     } finally {
       setLoading(false);
     }
-  }, [isDBReady, getAllRecords]);
+  }, [isDBReady, getAllRecords, importMode]);
 
   useEffect(() => {
-    if (isDBReady) {
+    if (isDBReady && importMode === 'single') {
       loadData();
+    } else if (isDBReady && importMode === 'multi-file') {
+      loadMultiFileData();
     }
 
     // Subscribe to data changes
@@ -90,8 +111,42 @@ export const Base = () => {
         }
       });
     };
-  }, [isDBReady, subscribe, loadData]);
+  }, [isDBReady, subscribe, loadData, loadMultiFileData, importMode]);
 
+  // If multi-file mode, render different component
+  if (importMode === 'multi-file') {
+    if (!multiFileData) {
+      return <span className='loader'></span>;
+    }
+    
+    return (
+      <div className='flex flex-col justify-center items-center gap-5'>
+        <div className='text-center mb-4'>
+          <h1 className='text-3xl font-bold text-zinc-100 mb-2'>Historial de Votación</h1>
+          <p className='text-zinc-300'>
+            Datos importados de {multiFileData.fileMetadata?.length || 0} archivos
+          </p>
+          <div className='flex flex-wrap justify-center gap-2 mt-2'>
+            {multiFileData.fileMetadata?.map((file, index) => (
+              <span key={index} className='px-2 py-1 bg-zinc-700 rounded text-xs'>
+                {(() => {
+                  const date = new Date(file.date);
+                  return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+                })()}
+              </span>
+            ))}
+          </div>
+        </div>
+        
+        <MultiFileTable 
+          persons={multiFileData.persons || []} 
+          fileMetadata={multiFileData.fileMetadata || []}
+          search={search}
+          setSearch={setSearch}
+        />
+      </div>
+    );
+  }
   const clearPersonFilter = () => {
     setSearch('');
   };
