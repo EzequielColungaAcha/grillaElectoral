@@ -1,12 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CheckCircle, XCircle, Calendar } from '@phosphor-icons/react';
 
-export const MultiFileTable = ({
-  persons,
-  fileMetadata,
-  search,
-  setSearch,
-}) => {
+export const MultiFileTable = ({ persons, fileMetadata, search, setSearch }) => {
   const [sortBy, setSortBy] = useState('lastName'); // 'lastName', 'firstName', 'dni', 'tableNumber'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
 
@@ -17,11 +12,10 @@ export const MultiFileTable = ({
     // Apply search filter
     if (search.trim()) {
       const searchLower = search.toLowerCase();
-      filtered = persons.filter(
-        (person) =>
-          person.firstName.toLowerCase().includes(searchLower) ||
-          person.lastName.toLowerCase().includes(searchLower) ||
-          person.dni.includes(searchLower)
+      filtered = persons.filter(person => 
+        person.firstName.toLowerCase().includes(searchLower) ||
+        person.lastName.toLowerCase().includes(searchLower) ||
+        person.dni.includes(searchLower)
       );
     }
 
@@ -68,60 +62,26 @@ export const MultiFileTable = ({
     return (
       <div className='flex flex-wrap gap-1'>
         {votingHistory.map((vote, index) => {
-          const fileInfo = fileMetadata.find((f) => f.date === vote.date);
+          const fileInfo = fileMetadata.find(f => f.date === vote.date);
           const date = new Date(vote.date);
-          const displayDate = `${(date.getMonth() + 1)
-            .toString()
-            .padStart(2, '0')}/${date.getFullYear()}`;
-
-          // Get voting time if available
-          let votingTime = '';
-          if (vote.voted && vote.updatedAt) {
-            try {
-              let ts = Number(vote.updatedAt);
-
-              // If it's in seconds, convert to ms
-              if (ts < 1e12) {
-                ts = ts * 1000;
-              }
-
-              const voteDate = new Date(ts);
-
-              if (!isNaN(voteDate.getTime())) {
-                votingTime = voteDate.toLocaleTimeString('es-AR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false,
-                  timeZone: 'America/Argentina/Buenos_Aires',
-                });
-              }
-            } catch (error) {
-              console.log('error parsing', error);
-            }
-          }
-
+          const displayDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+          
           return (
-            <div key={index} className='flex flex-col items-center gap-1'>
-              <div
-                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                  vote.voted
-                    ? 'bg-green-800 text-green-200'
-                    : 'bg-red-800 text-red-200'
-                }`}
-                title={`${
-                  fileInfo
-                    ? fileInfo.displayDate
-                    : new Date(vote.date).toLocaleDateString('es-AR')
-                } - ${vote.voted ? 'Votó' : 'No votó'}`}
-              >
-                {vote.voted ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                <span>{displayDate}</span>
-              </div>
-              <div className='h-4 flex items-center justify-center'>
-                {votingTime && (
-                  <span className='text-xs text-zinc-400'>{votingTime}</span>
-                )}
-              </div>
+            <div
+              key={index}
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                vote.voted 
+                  ? 'bg-green-800 text-green-200' 
+                  : 'bg-red-800 text-red-200'
+              }`}
+              title={`${fileInfo ? fileInfo.displayDate : new Date(vote.date).toLocaleDateString('es-AR')} - ${vote.voted ? 'Votó' : 'No votó'}`}
+            >
+              {vote.voted ? (
+                <CheckCircle size={12} />
+              ) : (
+                <XCircle size={12} />
+              )}
+              <span>{displayDate}</span>
             </div>
           );
         })}
@@ -148,8 +108,7 @@ export const MultiFileTable = ({
       <div className='text-center mb-4 text-zinc-300'>
         {search ? (
           <>
-            Resultados de búsqueda: {filteredAndSortedPersons.length} de{' '}
-            {persons.length} registros
+            Resultados de búsqueda: {filteredAndSortedPersons.length} de {persons.length} registros
             <button
               onClick={() => setSearch('')}
               className='ml-4 px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm'
@@ -168,19 +127,19 @@ export const MultiFileTable = ({
           <table className='w-full'>
             <thead className='bg-zinc-700'>
               <tr>
-                <th
+                <th 
                   className='px-4 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider cursor-pointer hover:bg-zinc-600'
                   onClick={() => handleSort('lastName')}
                 >
                   Apellido {getSortIcon('lastName')}
                 </th>
-                <th
+                <th 
                   className='px-4 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider cursor-pointer hover:bg-zinc-600'
                   onClick={() => handleSort('firstName')}
                 >
                   Nombre {getSortIcon('firstName')}
                 </th>
-                <th
+                <th 
                   className='px-4 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider cursor-pointer hover:bg-zinc-600'
                   onClick={() => handleSort('dni')}
                 >
@@ -194,10 +153,7 @@ export const MultiFileTable = ({
             </thead>
             <tbody className='divide-y divide-zinc-700'>
               {filteredAndSortedPersons.map((person, index) => (
-                <tr
-                  key={`${person.dni}-${index}`}
-                  className='hover:bg-zinc-750'
-                >
+                <tr key={`${person.dni}-${index}`} className='hover:bg-zinc-750'>
                   <td className='px-4 py-3 text-sm text-zinc-300 uppercase'>
                     {person.lastName}
                   </td>
