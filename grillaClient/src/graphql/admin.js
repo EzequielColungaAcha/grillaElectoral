@@ -140,6 +140,8 @@ export const exportQuery = gql`
       voted
       totalPersons
       factions {
+        _id
+        votes
         config {
           _id
           color
@@ -161,6 +163,7 @@ export const exportQuery = gql`
         affiliate
         referer
         driver
+        updatedAt
       }
     }
     logs {

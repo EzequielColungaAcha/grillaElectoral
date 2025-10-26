@@ -17,7 +17,7 @@ export const Export = () => {
 
   const persons = [];
   data?.tables?.forEach((table) => {
-    table.persons.forEach((person) => {
+    table?.persons?.forEach((person) => {
       const newPerson = {
         order: person.order,
         firstName: person.firstName,
@@ -27,6 +27,9 @@ export const Export = () => {
         table: person.tableNumber,
         affiliate: person.affiliate,
         message: person.message,
+        referer: person.referer,
+        driver: person.driver,
+        updatedAt: person.updatedAt,
       };
       persons.push(newPerson);
     });
@@ -57,6 +60,8 @@ export const Export = () => {
           value={(col) => (col.affiliate ? 'Si' : 'No')}
         />
         <ExcelColumn label='Mensaje' value='message' />
+        <ExcelColumn label='Referente' value='referer' />
+        <ExcelColumn label='Chofer' value='driver' />
       </ExcelSheet>
     </ExcelFile>
   );
@@ -89,6 +94,8 @@ export const Export = () => {
             value={(col) => (col.affiliate ? 'Si' : 'No')}
           />
           <ExcelColumn label='Mensaje' value='message' />
+          <ExcelColumn label='Referente' value='referer' />
+          <ExcelColumn label='Chofer' value='driver' />
         </ExcelSheet>
       ))}
     </ExcelFile>
@@ -96,37 +103,38 @@ export const Export = () => {
 
   const downloadJsonData = () => {
     // create file in browser
-    const fileName = `Elecciones ${year} - Database`;
+    const fileName = `Elecciones ${month}-${year} - Database`;
 
     // Create a comprehensive export object
     const exportData = {
       exportInfo: {
         exportDate: new Date().toISOString(),
+        month: month,
         year: year,
         description:
           'Exportación completa de datos electorales incluyendo logs del sistema',
       },
-      tables: data.tables,
+      tables: data?.tables,
       logs: {
-        entries: data.logs?.logs || [],
-        totalCount: data.logs?.totalCount || 0,
-        hasMore: data.logs?.hasMore || false,
+        entries: data?.logs?.logs || [],
+        totalCount: data?.logs?.totalCount || 0,
+        hasMore: data?.logs?.hasMore || false,
         exportNote: 'Logs del sistema con todas las actividades registradas',
       },
       summary: {
-        totalTables: data.tables?.length || 0,
+        totalTables: data?.tables?.length || 0,
         totalPersons:
-          data.tables?.reduce(
+          data?.tables?.reduce(
             (sum, table) => sum + (table.persons?.length || 0),
             0
           ) || 0,
         totalVoted:
-          data.tables?.reduce(
+          data?.tables?.reduce(
             (sum, table) =>
               sum + (table.persons?.filter((p) => p.vote)?.length || 0),
             0
           ) || 0,
-        totalLogs: data.logs?.totalCount || 0,
+        totalLogs: data?.logs?.totalCount || 0,
       },
     };
 
