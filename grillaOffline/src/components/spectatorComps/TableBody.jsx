@@ -1,8 +1,9 @@
 import React from "react";
 import throttle from "lodash.throttle";
-import { useState } from 'react';
-import { InfoModal } from '../modals/InfoModal';
-import { useModal } from '../../hooks/useModal';
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+
+const MySwal = withReactContent(Swal);
 
 const itemRowHeight = 32; // same height as each row (32px, see styles.css)
 const screenHeight = Math.max(
@@ -16,17 +17,6 @@ const TableBody = ({ data }) => {
   const [displayStart, setDisplayStart] = React.useState(0);
   const [displayEnd, setDisplayEnd] = React.useState(0);
   const [scrollPosition, setScrollPosition] = React.useState(0);
-  const [selectedPerson, setSelectedPerson] = useState(null);
-  const {
-    isOpen: showPersonModal,
-    openModal: openPersonModal,
-    closeModal: closePersonModal,
-  } = useModal();
-
-  const handlePersonClick = (person) => {
-    setSelectedPerson(person);
-    openPersonModal();
-  };
 
   const setDisplayPositions = React.useCallback(
     (scroll) => {
@@ -90,7 +80,47 @@ const TableBody = ({ data }) => {
               key={i}
               className="h-8 group cursor-pointer"
               onClick={() => {
-                handlePersonClick(row);
+                MySwal.fire({
+                  html: (
+                    <div className="flex flex-col gap-1">
+                      <label>
+                        <span className="font-semibold">Mesa:</span>{" "}
+                        <span className="uppercase">{row.tableNumber}</span>
+                      </label>
+                      <label>
+                        <span className="font-semibold">Orden:</span>{" "}
+                        <span className="uppercase">{row.order}</span>
+                      </label>
+                      <label>
+                        <span className="font-semibold">Nombre:</span>{" "}
+                        <span className="uppercase">{row.firstName}</span>
+                      </label>
+                      <label>
+                        <span className="font-semibold">Apellido:</span>{" "}
+                        <span className="uppercase">{row.lastName}</span>
+                      </label>
+                      <label>
+                        <span className="font-semibold">DNI:</span> {row.dni}
+                      </label>
+                      <label>
+                        <span className="font-semibold">Voto:</span>{" "}
+                        {row.vote == true ? "Votó" : "No votó"}
+                      </label>
+                      <label>
+                        <span className="font-semibold">Direción:</span>{" "}
+                        {row.address ? row.address : "-"}
+                      </label>
+                      <label>
+                        <span className="font-semibold">Afiliado:</span>{" "}
+                        {row.affiliate == true ? "Si" : "No"}
+                      </label>
+                      <label>
+                        <span className="font-semibold">Comentario:</span>{" "}
+                        {row.message ? row.message : "-"}
+                      </label>
+                    </div>
+                  ),
+                });
               }}
             >
               <td className="px-5 text-center py-2 whitespace-nowrap text-sm font-medium bg-green-800 group-hover:bg-green-700 hidden md:table-cell">
@@ -118,7 +148,47 @@ const TableBody = ({ data }) => {
               key={i}
               className="h-8 group cursor-pointer"
               onClick={() => {
-                handlePersonClick(row);
+                MySwal.fire({
+                  html: (
+                    <div className="flex flex-col gap-1">
+                      <label>
+                        <span className="font-semibold">Mesa:</span>{" "}
+                        <span className="uppercase">{row.tableNumber}</span>
+                      </label>
+                      <label>
+                        <span className="font-semibold">Orden:</span>{" "}
+                        <span className="uppercase">{row.order}</span>
+                      </label>
+                      <label>
+                        <span className="font-semibold">Nombre:</span>{" "}
+                        <span className="uppercase">{row.firstName}</span>
+                      </label>
+                      <label>
+                        <span className="font-semibold">Apellido:</span>{" "}
+                        <span className="uppercase">{row.lastName}</span>
+                      </label>
+                      <label>
+                        <span className="font-semibold">DNI:</span> {row.dni}
+                      </label>
+                      <label>
+                        <span className="font-semibold">Voto:</span>{" "}
+                        {row.vote == true ? "Votó" : "No votó"}
+                      </label>
+                      <label>
+                        <span className="font-semibold">Direción:</span>{" "}
+                        {row.address ? row.address : "-"}
+                      </label>
+                      <label>
+                        <span className="font-semibold">Afiliado:</span>{" "}
+                        {row.affiliate == true ? "Si" : "No"}
+                      </label>
+                      <label>
+                        <span className="font-semibold">Comentario:</span>{" "}
+                        {row.message ? row.message : "-"}
+                      </label>
+                    </div>
+                  ),
+                });
               }}
             >
               <td className="hidden md:table-cell px-5 text-center py-2 whitespace-nowrap text-sm font-medium bg-red-800 group-hover:bg-red-700">
@@ -152,71 +222,7 @@ const TableBody = ({ data }) => {
     ></tr>
   );
 
-  return (
-    <>
-      <tbody className="divide-y divide-zinc-300">{rows}</tbody>
-      
-      {/* Person Details Modal */}
-      <InfoModal
-        isOpen={showPersonModal}
-        onClose={() => {
-          closePersonModal();
-          setSelectedPerson(null);
-        }}
-        title='Información del Votante'
-      >
-        {selectedPerson && (
-          <div className='flex flex-col gap-3'>
-            <div className='grid grid-cols-2 gap-2'>
-              <div>
-                <span className='font-semibold'>Mesa:</span>{' '}
-                <span className='uppercase'>{selectedPerson.tableNumber}</span>
-              </div>
-              <div>
-                <span className='font-semibold'>Orden:</span>{' '}
-                <span className='uppercase'>{selectedPerson.order}</span>
-              </div>
-              <div>
-                <span className='font-semibold'>Nombre:</span>{' '}
-                <span className='uppercase'>{selectedPerson.firstName}</span>
-              </div>
-              <div>
-                <span className='font-semibold'>Apellido:</span>{' '}
-                <span className='uppercase'>{selectedPerson.lastName}</span>
-              </div>
-              <div>
-                <span className='font-semibold'>DNI:</span> {selectedPerson.dni}
-              </div>
-              <div>
-                <span className='font-semibold'>Voto:</span>{' '}
-                {selectedPerson.vote ? 'Votó' : 'No votó'}
-              </div>
-            </div>
-            <div>
-              <span className='font-semibold'>Dirección:</span>{' '}
-              {selectedPerson.address || '-'}
-            </div>
-            <div>
-              <span className='font-semibold'>Afiliado:</span>{' '}
-              {selectedPerson.affiliate ? 'Sí' : 'No'}
-            </div>
-            <div>
-              <span className='font-semibold'>Referente:</span>{' '}
-              {selectedPerson.referer || '-'}
-            </div>
-            <div>
-              <span className='font-semibold'>Chofer:</span>{' '}
-              {selectedPerson.driver || '-'}
-            </div>
-            <div>
-              <span className='font-semibold'>Comentario:</span>{' '}
-              {selectedPerson.message || '-'}
-            </div>
-          </div>
-        )}
-      </InfoModal>
-    </>
-  );
+  return <tbody className="divide-y divide-slate-300">{rows}</tbody>;
 };
 
 export default TableBody;

@@ -18,7 +18,6 @@ import { AdminUsers } from './pages/AdminUsers.jsx';
 import { Export } from './pages/Export.jsx';
 import { Estado } from './pages/Estado.jsx';
 import { Escrutinio } from './pages/Escrutinio.jsx';
-import { AdminLogs } from './pages/AdminLogs.jsx';
 import Navbar from './components/navbar/Navbar.jsx';
 import { useAuth } from './context/simpleAuthContext.jsx';
 
@@ -136,14 +135,6 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path={`${URL}/admin/logs/`}
-              element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
-                  <AdminLogs />
-                </ProtectedRoute>
-              }
-            />
           </Routes>
         </HashRouter>
       ) : (
@@ -252,14 +243,6 @@ const AppContent = () => {
               element={
                 <ProtectedRoute privacy={PRIVACY.admin}>
                   <Export />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${URL}/admin/logs/`}
-              element={
-                <ProtectedRoute privacy={PRIVACY.admin}>
-                  <AdminLogs />
                 </ProtectedRoute>
               }
             />

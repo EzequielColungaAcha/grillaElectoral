@@ -1,8 +1,10 @@
 import React, { useContext } from 'react';
 import { useAuth } from '../../context/simpleAuthContext';
 import throttle from 'lodash.throttle';
-import { useState } from 'react';
-import { ConfirmModal } from '../modals/ConfirmModal';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+
+const MySwal = withReactContent(Swal);
 
 const itemRowHeight = 184; // same height as each row (184px)
 const screenHeight = Math.max(
@@ -12,7 +14,7 @@ const screenHeight = Math.max(
 const offset = screenHeight; // We want to render more than we see, or else we will see nothing when scrolling fast
 const rowsToRender = Math.floor((screenHeight + offset) / itemRowHeight);
 
-const PersonsTableBody = ({ data, updateVote, voteLoading, setShowConfirm, setSelectedPerson }) => {
+const PersonsTableBody = ({ data, updateVote, voteLoading }) => {
   const { user } = useAuth();
 
   const [displayStart, setDisplayStart] = React.useState(0);
@@ -82,10 +84,38 @@ const PersonsTableBody = ({ data, updateVote, voteLoading, setShowConfirm, setSe
               className='h-8 group cursor-pointer'
               onClick={() => {
                 !voteLoading &&
-                  (() => {
-                    setSelectedPerson(row);
-                    setShowConfirm(true);
-                  })();
+                  MySwal.fire({
+                    title: `Deshacer el voto de \n${row.lastName.toUpperCase()}, ${row.firstName.toUpperCase()}\nNro de Orden: ${
+                      row.order
+                    }\nDNI: ${row.dni}?`,
+                    icon: 'warning',
+                    iconColor: '#d33',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#464646',
+                    confirmButtonText: 'Deshacer',
+                    cancelButtonText: 'Cancelar',
+                    reverseButtons: true,
+                  }).then((result) => {
+                    if (result.isConfirmed) {
+                      const voteValue = row.vote == true ? false : true;
+                      updateVote({
+                        id: row._id,
+                        vote: voteValue,
+                        userName: user?.name,
+                        userRol: user?.rol,
+                        firstName: row.firstName,
+                        lastName: row.lastName,
+                        order: row.order,
+                        dni: row.dni,
+                        tableNumber: row.tableNumber,
+                        message: row.message,
+                        affiliate: row.affiliate,
+                        address: row.address,
+                        tableId: row.tableId,
+                      });
+                    }
+                  });
               }}
             >
               <td>

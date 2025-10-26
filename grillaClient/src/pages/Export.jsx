@@ -98,19 +98,16 @@ export const Export = () => {
     // create file in browser
     const fileName = `Elecciones ${year} - Database`;
 
-    // Create a comprehensive export object with logs
+    // Create a comprehensive export object
     const exportData = {
       exportInfo: {
         exportDate: new Date().toISOString(),
-        exportMonth: month,
-        exportYear: year,
-        exportDay: day,
         year: year,
         description:
           'Exportación completa de datos electorales incluyendo logs del sistema',
       },
       tables: data.tables,
-      logs: data?.logs?.logs || [],
+      logs: data.logs?.logs || [],
       summary: {
         totalTables: data.tables?.length || 0,
         totalPersons:
@@ -124,7 +121,7 @@ export const Export = () => {
               sum + (table.persons?.filter((p) => p.vote)?.length || 0),
             0
           ) || 0,
-        totalLogs: data?.logs?.logs?.length || 0,
+        totalLogs: data.logs?.logs?.length || 0,
       },
     };
 

@@ -1,7 +1,7 @@
 import React from "react";
 import TableBody from "./TableBody";
 
-const Table = ({ persons, loading, error, onPersonClick }) => {
+const Table = ({ persons, loading, error }) => {
   const [data, setData] = React.useState();
 
   React.useEffect(() => {
@@ -11,18 +11,10 @@ const Table = ({ persons, loading, error, onPersonClick }) => {
 
   if (loading) return <span className="loader"></span>;
   if (error) return <p>Error...</p>;
-
-  // Add safety check for data
-  if (!data || !Array.isArray(data)) {
-    return (
-      <div className='text-center text-zinc-300'>No hay datos disponibles</div>
-    );
-  }
-
   return (
     <div className="flex flex-col">
-      <table className="border border-zinc-200">
-        <thead className="sticky top-0 bg-zinc-800">
+      <table className="border border-slate-200">
+        <thead className="sticky top-0 bg-slate-800">
           <tr>
             <th
               scope="col"
@@ -63,7 +55,7 @@ const Table = ({ persons, loading, error, onPersonClick }) => {
           </tr>
         </thead>
 
-        <TableBody data={data} onPersonClick={onPersonClick} />
+        <TableBody data={data} />
       </table>
     </div>
   );

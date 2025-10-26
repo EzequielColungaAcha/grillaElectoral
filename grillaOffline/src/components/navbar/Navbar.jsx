@@ -3,36 +3,74 @@ import { useState } from 'react';
 import { useAuth } from '../../context/simpleAuthContext';
 import { Spin as Hamburger } from 'hamburger-react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 import { PRIVACY, URL } from '../../config';
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
-import { ConfirmModal } from '../modals/ConfirmModal';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+const MySwal = withReactContent(Swal);
+
 export default function Navbar({ fixed }) {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const onLogout = () => {
-    logout();
-    navigate(`${URL}/`);
-    setShowLogoutConfirm(false);
+    MySwal.fire({
+      title: `Cerrar Sesión?`,
+      text: 'Esto eliminará todos los datos importados.',
+      icon: 'warning',
+      iconColor: '#d33',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#464646',
+      confirmButtonText: 'Cerrar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        // Show loading while clearing database
+        MySwal.fire({
+          title: 'Cerrando sesión...',
+          text: 'Limpiando base de datos...',
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          willOpen: () => {
+            MySwal.showLoading();
+          },
+        });
+
+        try {
+          await logout();
+          MySwal.close();
+          navigate(
+            `${import.meta.env.VITE_HASH_BROWSER === true ? '#/' : `${URL}/`}`
+          );
+        } catch (error) {
+          console.error('Error during logout:', error);
+          MySwal.close();
+          navigate(
+            `${import.meta.env.VITE_HASH_BROWSER === true ? '#/' : `${URL}/`}`
+          );
+        }
+      }
+    });
   };
 
   const [navbarOpen, setNavbarOpen] = useState(false);
 
   return isAuthenticated ? (
     <>
-      <nav className='relative flex flex-wrap items-center justify-between px-2 bg-zinc-800 mb-1'>
+      <nav className='relative flex flex-wrap items-center justify-between px-2 bg-slate-800 mb-1'>
         <div className='container px-4 mx-auto flex flex-wrap items-center justify-between'>
           <div className='w-full relative flex items-center justify-between lg:w-auto lg:static lg:block lg:justify-start'>
             <a
-              className='text-lg font-bold leading-relaxed inline-block mr-4 py-2 whitespace-nowrap uppercase text-zinc-200 hover:opacity-50'
+              className='text-lg font-bold leading-relaxed inline-block mr-4 py-2 whitespace-nowrap uppercase text-slate-200 hover:opacity-50'
               href={`${
                 import.meta.env.VITE_HASH_BROWSER === true ? '#/' : `${URL}/`
               }`}
@@ -40,7 +78,7 @@ export default function Navbar({ fixed }) {
               Inicio
             </a>
             <button
-              className='text-zinc-200 cursor-pointer text-xl leading-none px-3 py-0 border border-solid border-transparent rounded bg-transparent block lg:hidden outline-none focus:outline-none'
+              className='text-slate-200 cursor-pointer text-xl leading-none px-3 py-0 border border-solid border-transparent rounded bg-transparent block lg:hidden outline-none focus:outline-none'
               type='button'
             >
               <Hamburger onToggle={(toggled) => setNavbarOpen(!navbarOpen)} />
@@ -57,7 +95,7 @@ export default function Navbar({ fixed }) {
               {PRIVACY.mesas.includes(user.rol) ? (
                 <li className='nav-item'>
                   <a
-                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
+                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-slate-200 hover:opacity-50'
                     href={`${
                       import.meta.env.VITE_HASH_BROWSER === true
                         ? '#/'
@@ -73,7 +111,7 @@ export default function Navbar({ fixed }) {
               {PRIVACY.prensa.includes(user.rol) ? (
                 <li className='nav-item'>
                   <a
-                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
+                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-slate-200 hover:opacity-50'
                     href={`${
                       import.meta.env.VITE_HASH_BROWSER === true
                         ? '#/'
@@ -90,7 +128,7 @@ export default function Navbar({ fixed }) {
               PRIVACY.prensa.includes(user.rol) ? (
                 <li className='nav-item'>
                   <a
-                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
+                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-slate-200 hover:opacity-50'
                     href={`${
                       import.meta.env.VITE_HASH_BROWSER === true
                         ? '#/'
@@ -107,7 +145,7 @@ export default function Navbar({ fixed }) {
               PRIVACY.prensa.includes(user.rol) ? (
                 <li className='nav-item'>
                   <a
-                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
+                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-slate-200 hover:opacity-50'
                     href={`${
                       import.meta.env.VITE_HASH_BROWSER === true
                         ? '#/'
@@ -123,7 +161,7 @@ export default function Navbar({ fixed }) {
               {PRIVACY.base.includes(user.rol) ? (
                 <li className='nav-item'>
                   <a
-                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'
+                    className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-slate-200 hover:opacity-50'
                     href={`${
                       import.meta.env.VITE_HASH_BROWSER === true
                         ? '#/'
@@ -142,10 +180,10 @@ export default function Navbar({ fixed }) {
                   className='relative inline-block text-right ml-2'
                 >
                   <div>
-                    <Menu.Button className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:opacity-50'>
+                    <Menu.Button className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-slate-200 hover:opacity-50'>
                       Admin
                       <ChevronDownIcon
-                        className='-mr-1 h-5 w-5 text-zinc-200'
+                        className='-mr-1 h-5 w-5 text-slate-200'
                         aria-hidden='true'
                       />
                     </Menu.Button>
@@ -160,7 +198,7 @@ export default function Navbar({ fixed }) {
                     leaveFrom='transform opacity-100 scale-100'
                     leaveTo='transform opacity-0 scale-95'
                   >
-                    <Menu.Items className='absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-zinc-100 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none'>
+                    <Menu.Items className='absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-slate-100 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none'>
                       <div className='py-1'>
                         <Menu.Item>
                           {({ active }) => (
@@ -172,8 +210,8 @@ export default function Navbar({ fixed }) {
                               }admin/tables`}
                               className={classNames(
                                 active
-                                  ? 'bg-zinc-800 text-zinc-200 text-sm uppercase font-bold'
-                                  : 'bg-zinc-100 text-zinc-800 text-sm uppercase font-bold',
+                                  ? 'bg-slate-800 text-slate-200 text-sm uppercase font-bold'
+                                  : 'bg-slate-100 text-slate-800 text-sm uppercase font-bold',
                                 'block px-4 py-2 text-sm'
                               )}
                             >
@@ -191,8 +229,8 @@ export default function Navbar({ fixed }) {
                               }admin/partidos`}
                               className={classNames(
                                 active
-                                  ? 'bg-zinc-800 text-zinc-200 text-sm uppercase font-bold'
-                                  : 'bg-zinc-100 text-zinc-800 text-sm uppercase font-bold',
+                                  ? 'bg-slate-800 text-slate-200 text-sm uppercase font-bold'
+                                  : 'bg-slate-100 text-slate-800 text-sm uppercase font-bold',
                                 'block px-4 py-2 text-sm'
                               )}
                             >
@@ -210,8 +248,8 @@ export default function Navbar({ fixed }) {
                               }admin/usuarios`}
                               className={classNames(
                                 active
-                                  ? 'bg-zinc-800 text-zinc-200 text-sm uppercase font-bold'
-                                  : 'bg-zinc-100 text-zinc-800 text-sm uppercase font-bold',
+                                  ? 'bg-slate-800 text-slate-200 text-sm uppercase font-bold'
+                                  : 'bg-slate-100 text-slate-800 text-sm uppercase font-bold',
                                 'block px-4 py-2 text-sm'
                               )}
                             >
@@ -229,31 +267,12 @@ export default function Navbar({ fixed }) {
                               }admin/exportar`}
                               className={classNames(
                                 active
-                                  ? 'bg-zinc-800 text-zinc-200 text-sm uppercase font-bold'
-                                  : 'bg-zinc-100 text-zinc-800 text-sm uppercase font-bold',
+                                  ? 'bg-slate-800 text-slate-200 text-sm uppercase font-bold'
+                                  : 'bg-slate-100 text-slate-800 text-sm uppercase font-bold',
                                 'block px-4 py-2 text-sm'
                               )}
                             >
                               Exportar Datos
-                            </a>
-                          )}
-                        </Menu.Item>
-                        <Menu.Item>
-                          {({ active }) => (
-                            <a
-                              href={`${
-                                import.meta.env.VITE_HASH_BROWSER === true
-                                  ? '#/'
-                                  : `${URL}/`
-                              }admin/logs`}
-                              className={classNames(
-                                active
-                                  ? 'bg-zinc-800 text-zinc-200 text-sm uppercase font-bold'
-                                  : 'bg-zinc-100 text-zinc-800 text-sm uppercase font-bold',
-                                'block px-4 py-2 text-sm'
-                              )}
-                            >
-                              Logs del Sistema
                             </a>
                           )}
                         </Menu.Item>
@@ -266,23 +285,12 @@ export default function Navbar({ fixed }) {
               )}
               <li className='nav-item'>
                 <button
-                  className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-zinc-200 hover:text-rose-800'
-                  onClick={() => setShowLogoutConfirm(true)}
+                  className='px-3 py-2 flex items-center text-sm uppercase font-bold leading-snug text-slate-200 hover:text-rose-800'
+                  onClick={onLogout}
                 >
                   <span className='ml-2'>Cerrar Sesión</span>
                 </button>
               </li>
-
-              <ConfirmModal
-                isOpen={showLogoutConfirm}
-                onClose={() => setShowLogoutConfirm(false)}
-                onConfirm={onLogout}
-                title='¿Cerrar Sesión?'
-                message='Esto eliminará todos los datos importados.\n¿Estás seguro de que deseas cerrar la sesión?'
-                type='warning'
-                confirmText='Cerrar'
-                cancelText='Cancelar'
-              />
             </ul>
           </div>
         </div>
@@ -290,11 +298,11 @@ export default function Navbar({ fixed }) {
     </>
   ) : (
     <>
-      <nav className='relative flex flex-wrap items-center justify-between px-2 bg-zinc-800 mb-1'>
+      <nav className='relative flex flex-wrap items-center justify-between px-2 bg-slate-800 mb-1'>
         <div className='container px-4 mx-auto flex flex-wrap items-center justify-between'>
           <div className='w-full relative flex items-center justify-between lg:w-auto lg:static lg:block lg:justify-start'>
             <a
-              className='text-lg font-bold leading-relaxed inline-block mr-4 py-2 whitespace-nowrap uppercase text-zinc-200'
+              className='text-lg font-bold leading-relaxed inline-block mr-4 py-2 whitespace-nowrap uppercase text-slate-200'
               href={`${
                 import.meta.env.VITE_HASH_BROWSER === true ? '#/' : `${URL}/`
               }login`}

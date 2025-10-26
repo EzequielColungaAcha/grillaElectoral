@@ -10,13 +10,10 @@ import { StatusCerrada } from '../components/tables/tableDetails/StatusCerrada.j
 import { StatusDatosEnviados } from '../components/tables/tableDetails/StatusDatosEnviados.jsx';
 import PersonsTable from '../components/persons/PersonsTable.jsx';
 import { URL } from '../config.js';
-import { Hash } from '@phosphor-icons/react';
-import { useAuth } from '../context/simpleAuthContext.jsx';
 
 export function TableDetails() {
   const params = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [table, setTable] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -134,9 +131,9 @@ export function TableDetails() {
     const votePercent = ((totalVotes / personsLength) * 100).toFixed(2);
 
     return (
-      <div className='bg-zinc-800 shadow-lg shadow-black p-2 h-full w-full'>
+      <div className='bg-zinc-200 rounded-lg shadow-lg shadow-black p-2 h-full w-full'>
         <div className='flex justify-between items-center'>
-          {!user.assignedTable ? <ButtonBackToTables /> : <div></div>}
+          <ButtonBackToTables />
           <ButtonCloseTable table={table} search={setSearch} />
         </div>
         <div className='bg-zinc-900 mb-2 p-10 flex flex-col justify-between max-w-2xl m-auto'>
@@ -175,24 +172,25 @@ export function TableDetails() {
               <label className='block mb-2 text-sm font-medium text-white text-center'>
                 Búsqueda por número de orden
               </label>
-              <fieldset className='relative max-w-md'>
+              <div className='flex'>
+                <span className='inline-flex items-center px-3 text-sm bg-slate-600 rounded-l-md'>
+                  #
+                </span>
                 <input
+                  type='text'
+                  className='rounded-none rounded-r-lg bg-slate-600 block flex-1 min-w-0 w-full text-sm p-2.5'
+                  placeholder='Nro de Orden'
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value.toLowerCase());
                   }}
-                  placeholder='Nro de Orden'
-                  className='ps-11 bg-zinc-800 text-zinc-200 border border-zinc-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-500'
                 />
-                <div className='absolute left-3 top-1/2 transform -translate-y-1/2'>
-                  <Hash size={19} color='#AFBACA' />
-                </div>
-              </fieldset>
+              </div>
             </form>
           </div>
         </div>
         {table.persons.length === 0 ? (
-          <div className='text-center text-zinc-200 p-8'>
+          <div className='text-center text-slate-200 p-8'>
             <p>No hay personas cargadas en esta mesa.</p>
             <p>Total de personas encontradas: {table.totalPersons}</p>
           </div>
