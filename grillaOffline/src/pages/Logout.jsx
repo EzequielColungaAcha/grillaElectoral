@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { URL } from '../config';
 
-
 export const Logout = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -36,11 +35,13 @@ export const Logout = () => {
         onClose={handleCancel}
         onConfirm={onLogout}
         title='¿Cerrar Sesión?'
-        message={`Esto eliminará todos los datos importados.\n¿Estás seguro de que deseas cerrar la sesión?`}
+        message={
+          'Esto eliminará todos los datos importados.\n¿Estás seguro de que deseas cerrar la sesión?'
+        }
         type='warning'
         confirmText='Cerrar'
         cancelText='Cancelar'
       />
     </>
-  )
-}
+  );
+};

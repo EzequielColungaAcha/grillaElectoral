@@ -47,7 +47,7 @@ export const AdminLogs = () => {
     try {
       setLoading(true);
       const allLogs = await getAllRecords('logs');
-      
+
       if (!allLogs || allLogs.length === 0) {
         setLogs([]);
         setTotalCount(0);
@@ -77,7 +77,9 @@ export const AdminLogs = () => {
       });
 
       // Sort by timestamp (newest first)
-      filteredLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      filteredLogs.sort(
+        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+      );
 
       setTotalCount(filteredLogs.length);
 
@@ -220,7 +222,10 @@ export const AdminLogs = () => {
     // Try to get additional info from metadata if not in target
     let metadata = null;
     try {
-      metadata = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata;
+      metadata =
+        typeof log.metadata === 'string'
+          ? JSON.parse(log.metadata)
+          : log.metadata;
     } catch (e) {
       metadata = null;
     }
@@ -259,7 +264,8 @@ export const AdminLogs = () => {
     if (!log.changes) return '-';
 
     try {
-      const changes = typeof log.changes === 'string' ? JSON.parse(log.changes) : log.changes;
+      const changes =
+        typeof log.changes === 'string' ? JSON.parse(log.changes) : log.changes;
       const action = log.action;
 
       // Status changes
@@ -394,8 +400,16 @@ export const AdminLogs = () => {
 
   // Helper function to render expanded content based on action type
   function renderExpandedContent(log) {
-    const changes = log.changes ? (typeof log.changes === 'string' ? JSON.parse(log.changes) : log.changes) : null;
-    const metadata = log.metadata ? (typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata) : null;
+    const changes = log.changes
+      ? typeof log.changes === 'string'
+        ? JSON.parse(log.changes)
+        : log.changes
+      : null;
+    const metadata = log.metadata
+      ? typeof log.metadata === 'string'
+        ? JSON.parse(log.metadata)
+        : log.metadata
+      : null;
     const action = log.action;
     const searchTerm = searchTerms[log.id] || '';
 
@@ -554,21 +568,17 @@ export const AdminLogs = () => {
                           <span className='px-2 py-1 bg-red-900/30 text-red-300 rounded text-xs'>
                             {value.old === null ||
                             value.old === undefined ||
-                            value.old === '' ? (
-                              '""'
-                            ) : (
-                              String(value.old)
-                            )}
+                            value.old === ''
+                              ? '""'
+                              : String(value.old)}
                           </span>
                           <span className='text-zinc-500'>→</span>
                           <span className='px-2 py-1 bg-green-900/30 text-green-300 rounded text-xs'>
                             {value.new === null ||
                             value.new === undefined ||
-                            value.new === '' ? (
-                              '""'
-                            ) : (
-                              String(value.new)
-                            )}
+                            value.new === ''
+                              ? '""'
+                              : String(value.new)}
                           </span>
                         </>
                       )}
@@ -752,7 +762,9 @@ export const AdminLogs = () => {
               <input
                 type='date'
                 value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange('startDate', e.target.value)
+                }
                 className='w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-md text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500'
               />
             </div>
@@ -924,7 +936,7 @@ export const AdminLogs = () => {
             >
               <CaretLeft size={18} />
             </button>
-            
+
             <div className='flex items-center gap-2'>
               {generatePageNumbers().map((page, index) => (
                 <button

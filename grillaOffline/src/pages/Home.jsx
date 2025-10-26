@@ -1,141 +1,81 @@
-// /src/pages/Home.jsx
-import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Clock } from '../components/clock/Clock';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../context/simpleAuthContext';
 import { useDB } from '../context/dbContext';
 
-const pad2 = (n) => String(n).padStart(2, '0');
-
 export const Home = () => {
-  const { getAllRecords, getRecord, isDBReady } = useDB();
-
-  const [importMode, setImportMode] = useState('single');
+  const { user } = useAuth();
+  const year = new Date().getFullYear();
+  const [userTutorial, setUserTutorial] = useState('');
   const [importInfo, setImportInfo] = useState(null);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('importMode');
-      if (saved === 'multi-file' || saved === 'single') setImportMode(saved);
-    } catch {}
-  }, []);
+  const { getAllRecords, isDBReady } = useDB();
 
   const loadImportInfo = useCallback(async () => {
     if (!isDBReady) return;
 
     try {
-      if (importMode === 'multi-file') {
-        const multi = await getRecord('multiFileImport', 'multi_file_data');
-        if (multi?.fileMetadata?.length) {
-          const files = multi.fileMetadata;
-          const first = files[0];
-          const last = files[files.length - 1];
-
-          setImportInfo({
-            type: 'multi-file',
-            fileCount: files.length,
-            dateRange:
-              first?.displayDate && last?.displayDate
-                ? `${first.displayDate} - ${last.displayDate}`
-                : 'Fechas no disponibles',
-          });
-        } else {
-          setImportInfo({
-            type: 'multi-file',
-            fileCount: 0,
-            dateRange: 'Fechas no disponibles',
-          });
-        }
-        return;
-      }
-
-      // Single-file path -> keep only month/year
+      // Try to get export info from the dedicated store
       const exportInfoRecords = await getAllRecords('exportInfo');
-      if (Array.isArray(exportInfoRecords) && exportInfoRecords.length > 0) {
-        // Coerce numbers even if DB stored strings
-        const raw = exportInfoRecords[0] || {};
-        // Try common key variants just in case (e.g., month vs exportMonth)
-        const day = Number(raw.exportDay ?? raw.day ?? raw.d);
-        const month = Number(raw.exportMonth ?? raw.month ?? raw.m);
-        const year = Number(raw.exportYear ?? raw.year ?? raw.y);
-
-        // Basic sanity check (allows 1–31, 1–12, year >= 1900; tweak if needed)
-        const valid =
-          Number.isFinite(day) &&
-          day >= 1 &&
-          day <= 31 &&
-          Number.isFinite(month) &&
-          month >= 1 &&
-          month <= 12 &&
-          Number.isFinite(year) &&
-          year >= 1900;
-
-        if (valid) {
-          setImportInfo({ type: 'single', day, month, year });
-          return; // only return when we *really* have a good date
-        }
-        // else: fall through to tables[] fallback
-      }
-
-      // Fallback: infer from first table's createdAt -> month/year
-      const tables = await getAllRecords('tables');
-      if (Array.isArray(tables) && tables.length > 0 && tables[0]?.createdAt) {
-        const d = new Date(tables[0].createdAt);
+      if (exportInfoRecords && exportInfoRecords.length > 0) {
+        const exportInfo = exportInfoRecords[0];
         setImportInfo({
-          type: 'single',
-          month: d.getMonth() + 1,
-          year: d.getFullYear(),
+          month: exportInfo.exportMonth,
+          year: exportInfo.exportYear,
+          day: exportInfo.exportDay,
         });
-        return;
+      } else {
+        // Fallback: Check if there's any data imported by looking for tables
+        const tables = await getAllRecords('tables');
+        if (tables && tables.length > 0) {
+          const firstTable = tables[0];
+          if (firstTable.createdAt) {
+            const importDate = new Date(firstTable.createdAt);
+            setImportInfo({
+              month: importDate.getMonth() + 1,
+              year: importDate.getFullYear(),
+              day: importDate.getDate(),
+            });
+          }
+        }
       }
-
-      setImportInfo(null);
-    } catch (err) {
-      console.error('Error loading import info:', err);
-      setImportInfo(null);
+    } catch (error) {
+      console.error('Error loading import info:', error);
     }
-  }, [isDBReady, importMode, getAllRecords, getRecord]);
+  }, [isDBReady, getAllRecords]);
 
   useEffect(() => {
     loadImportInfo();
   }, [loadImportInfo]);
 
-  // ----- Render helpers -----
-  const renderImportInfo = useCallback(() => {
-    if (!importInfo)
-      return <span className='opacity-70'>Sin datos importados aún.</span>;
+  const videos = [
+    { user: 'admin', url: '/' },
+    { user: 'fiscal', url: 'https://youtu.be/pk0vQucgIQw' },
+    { user: 'base', url: 'https://youtu.be/_fhmEUihmHU' },
+    { user: 'prensa', url: 'https://youtu.be/5nGGK8fw97g' },
+  ];
 
-    if (importInfo.type === 'multi-file') {
-      return (
-        <span>
-          <strong>{importInfo.fileCount}</strong> archivo(s) importados
-          {importInfo.dateRange ? ` • Rango: ${importInfo.dateRange}` : null}
-        </span>
-      );
-    }
-
-    // single -> MM/YYYY only (coerce safely)
-    const m = Number(importInfo.month);
-    const y = Number(importInfo.year);
-    const valid = Number.isFinite(m) && m >= 1 && m <= 12 && Number.isFinite(y);
-    const formatted = valid ? `${pad2(m)}/${y}` : 'Fecha no disponible';
-
-    return (
-      <span>
-        Fecha del archivo: <strong>{formatted}</strong>
-      </span>
-    );
-  }, [importInfo]);
-
-  const importInfoForShow = useMemo(() => renderImportInfo(), [importInfo]);
+  useEffect(() => {
+    setUserTutorial(videos.find((e) => e.user == user?.rol)?.url || '/');
+  }, []);
 
   return (
-    <div className='text-center text-slate-200 h-full pt-16 flex flex-col justify-center items-center'>
-      <h1 className='uppercase text-4xl'>Grilla Electoral Dataview</h1>
+    <div className='text-center text-zinc-200 h-full pt-16 flex flex-col justify-center items-center'>
+      <h1 className='uppercase text-4xl mb-10'>Grilla electoral {year}</h1>
       <Clock />
       <div className='flex flex-col items-center justify-center mt-10'>
         <h4 className='w-fit text-xl text-justify px-1'>
-          Bienvenido/a <span className='text-lime-400'>Admin</span>.
+          Bienvenido/a <span className='text-lime-400'>Administrador</span>.
         </h4>
-        <h4 className='text-sm'>{importInfoForShow}</h4>
+        <h4 className='w-fit text-xl text-center px-1'>
+          Aplicación para visualizar una base de datos estática exportada por la
+          versión online.
+        </h4>
+        {importInfo && (
+          <h5 className='w-fit text-lg text-center px-1 mt-4 text-zinc-300'>
+            Datos importados: {importInfo.day}/{importInfo.month}/
+            {importInfo.year}
+          </h5>
+        )}
       </div>
     </div>
   );
