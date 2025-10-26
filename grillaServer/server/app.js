@@ -9,6 +9,7 @@ import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { ApolloServerPluginLandingPageDisabled } from '@apollo/server/plugin/disabled';
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
 
 export async function startApolloServer(typeDefs, resolvers) {
@@ -79,6 +80,12 @@ export async function startApolloServer(typeDefs, resolvers) {
       },
     })
   );
+
+  app.get('/grillaLogs', (req, res) => {
+    fs.readFile('./server/grillaLogs.log', 'utf8', (err, file) => {
+      res.status(200).send(file);
+    });
+  });
 
   const PORT = process.env.PORT || 4000;
 

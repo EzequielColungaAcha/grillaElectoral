@@ -104,7 +104,7 @@ export const logsQuery = gql`
       endDate: $endDate
     ) {
       logs {
-        id: _id
+        id
         timestamp
         level
         message
@@ -165,7 +165,7 @@ export const exportQuery = gql`
     }
     logs {
       logs {
-        id: _id
+        id
         timestamp
         level
         message
