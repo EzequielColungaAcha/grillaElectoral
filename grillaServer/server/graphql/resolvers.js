@@ -54,6 +54,7 @@ export const resolvers = {
         for (const table of tables) {
           const persons = await Person.find({ tableId: table._id });
           const factions = await Faction.find({ tableId: table._id });
+
           result.push({
             ...table.toObject(),
             persons,
@@ -1081,71 +1082,6 @@ export const resolvers = {
       }
     },
   },
-
-  // ---------- TYPE RESOLVERS (añadidos) ----------
-  Table: {
-    async persons(parent) {
-      if (Array.isArray(parent.persons)) return parent.persons;
-      return await Person.find({ tableId: parent._id })
-        .sort({ order: 1 })
-        .limit(1000)
-        .lean();
-    },
-    async totalPersons(parent) {
-      if (typeof parent.totalPersons === 'number') return parent.totalPersons;
-      return await Person.countDocuments({ tableId: parent._id });
-    },
-    async voted(parent) {
-      if (typeof parent.voted === 'number') return parent.voted;
-      return await Person.countDocuments({ tableId: parent._id, vote: true });
-    },
-    async factions(parent) {
-      if (Array.isArray(parent.factions)) return parent.factions;
-      return await Faction.find({ tableId: parent._id }).lean();
-    },
-  },
-
-  Person: {
-    async table(parent) {
-      if (parent.table) return parent.table;
-      return await Table.findById(parent.tableId).lean();
-    },
-  },
-
-  User: {
-    async assignedTable(parent) {
-      if (!parent.assignedTableId) return null;
-      return await Table.findById(parent.assignedTableId).lean();
-    },
-  },
-
-  Faction: {
-    async config(parent) {
-      if (parent.config) return parent.config;
-      if (!parent.configId) {
-        // schema says Faction.config is non-null => no devolver null silencioso
-        throw new Error('Missing configId for Faction');
-      }
-      const cfg = await FactionConfig.findById(parent.configId).lean();
-      if (!cfg) {
-        // evita null en campo non-null
-        throw new Error('FactionConfig not found for Faction');
-      }
-      return cfg;
-    },
-    async table(parent) {
-      if (parent.table) return parent.table;
-      if (!parent.tableId) return null;
-      return await Table.findById(parent.tableId).lean();
-    },
-    seats(parent) {
-      return typeof parent.seats === 'number' ? parent.seats : 0;
-    },
-    percentage(parent) {
-      return typeof parent.percentage === 'number' ? parent.percentage : null;
-    },
-  },
-  // ---------- FIN TYPE RESOLVERS ----------
 
   Subscription: {
     personVoted: {
