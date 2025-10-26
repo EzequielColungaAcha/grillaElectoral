@@ -27,8 +27,6 @@ export const Export = () => {
         table: person.tableNumber,
         affiliate: person.affiliate,
         message: person.message,
-        referer: person.referer,
-        driver: person.driver,
       };
       persons.push(newPerson);
     });
@@ -59,8 +57,6 @@ export const Export = () => {
           value={(col) => (col.affiliate ? 'Si' : 'No')}
         />
         <ExcelColumn label='Mensaje' value='message' />
-        <ExcelColumn label='Referente' value='referer' />
-        <ExcelColumn label='Chofer' value='driver' />
       </ExcelSheet>
     </ExcelFile>
   );
@@ -93,8 +89,6 @@ export const Export = () => {
             value={(col) => (col.affiliate ? 'Si' : 'No')}
           />
           <ExcelColumn label='Mensaje' value='message' />
-          <ExcelColumn label='Referente' value='referer' />
-          <ExcelColumn label='Chofer' value='driver' />
         </ExcelSheet>
       ))}
     </ExcelFile>
