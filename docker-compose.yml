@@ -2,7 +2,6 @@ services:
   client:
     build:
       context: ./grillaClient
-      network: host
       args:
         VITE_SEATS: ${SEATS}
         VITE_HASH_BROWSER: ${HASH_BROWSER}
@@ -12,9 +11,7 @@ services:
       - server
 
   server:
-    build:
-      context: ./grillaServer
-      network: host
+    build: ./grillaServer
     expose:
       - '4000'
     environment:

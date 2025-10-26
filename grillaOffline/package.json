@@ -1,0 +1,44 @@
+{
+  "name": "grilla-electoral-dataview",
+  "private": true,
+  "version": "1.0",
+  "type": "module",
+  "homepage": "https://EzequielColungaAcha.github,io/grillaElectoralDataview/",
+  "scripts": {
+    "predeploy": "pnpm run build && cp dist/index.html dist/404.html",
+    "deploy": "gh-pages -d dist",
+    "start": "vite build && vite preview --host",
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@phosphor-icons/react": "^2.1.10",
+    "bcryptjs": "^3.0.2",
+    "daisyui": "^2.51.5",
+    "dotenv": "^16.3.1",
+    "hamburger-react": "^2.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^3.1.2",
+    "lodash.throttle": "^4.1.1",
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-excel-exportz": "^1.0.0",
+    "react-icons": "^4.8.0",
+    "react-router-dom": "^6.10.0",
+    "sweetalert2": "^11.4.8",
+    "sweetalert2-react-content": "^5.0.7",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^3.1.0",
+    "autoprefixer": "^10.4.14",
+    "gh-pages": "^6.3.0",
+    "postcss": "^8.4.21",
+    "vite": "^4.2.0"
+  },
+  "packageManager": "pnpm@10.15.1"
+}
