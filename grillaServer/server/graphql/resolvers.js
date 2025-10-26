@@ -57,7 +57,6 @@ export const resolvers = {
 
           result.push({
             ...table.toObject(),
-            persons,
             totalPersons: persons.length,
             voted: persons.filter((p) => p.vote).length,
             factions,

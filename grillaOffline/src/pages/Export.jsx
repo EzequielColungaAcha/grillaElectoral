@@ -158,8 +158,8 @@ export const Export = () => {
   );
 
   return (
-    <div className='flex flex-col gap-5 justify-center items-center mt-10'>
-      <div className='flex justify-center items-center w-full h-1/2'>
+    <div className='flex flex-col gap-5 justify-center items-center h-screen'>
+      <div className='flex justify-center items-center w-full h-1/3'>
         <div className='w-1/2 flex flex-col items-center text-center justify-center'>
           <h2>Archivo con las mesas separadas por hojas.</h2>
           <div className='text-3xl mt-2'>
@@ -179,6 +179,24 @@ export const Export = () => {
           </div>
         </div>
       </div>
+      {/* <div className="flex flex-col justify-start items-center w-full h-1/3">
+        <h2>Archivo con todos los datos para ser utilizado en app offline.</h2>
+        <button
+          className="p-3 mt-5 bg-slate-600 rounded flex items-center gap-2 hover:bg-slate-500"
+          onClick={downloadJsonData}
+        >
+          Descargar Base de Datos
+        </button>
+      </div>
+      <div className="flex flex-col justify-start items-center w-full h-1/3">
+        <h2>Importar datos desde archivo JSON.</h2>
+        <input
+          type="file"
+          accept=".json"
+          onChange={handleFileImport}
+          className="p-3 mt-5 bg-slate-600 rounded flex items-center gap-2 hover:bg-slate-500"
+        />
+      </div> */}
     </div>
   );
 };
