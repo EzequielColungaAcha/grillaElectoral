@@ -166,7 +166,7 @@ export const exportQuery = gql`
         updatedAt
       }
     }
-    logs {
+    logs(exportAll: true) {
       logs {
         id
         timestamp

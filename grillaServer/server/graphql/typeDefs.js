@@ -67,6 +67,7 @@ export const typeDefs = gql`
       action: String
       startDate: String
       endDate: String
+      exportAll: Boolean
     ): LogsPaginatedResult!
     # // * ...
   }

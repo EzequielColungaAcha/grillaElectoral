@@ -304,7 +304,10 @@ export const resolvers = {
     },
 
     // * Query resolver for logs
-    logs: async (_, { limit = 50, offset = 0, action, startDate, endDate }) => {
+    logs: async (
+      _,
+      { limit = 50, offset = 0, action, startDate, endDate, exportAll = false }
+    ) => {
       try {
         const logFilePath = path.join(
           process.cwd(),
@@ -389,6 +392,17 @@ export const resolvers = {
         }
 
         const totalCount = parsedLogs.length;
+
+        // If exportAll is true, return all logs without pagination
+        if (exportAll) {
+          return {
+            logs: parsedLogs,
+            totalCount,
+            hasMore: false,
+          };
+        }
+
+        // Otherwise apply pagination
         const paginatedLogs = parsedLogs.slice(offset, offset + limit);
         const hasMore = offset + limit < totalCount;
 
