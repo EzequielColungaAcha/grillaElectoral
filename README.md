@@ -15,6 +15,7 @@ services:
   client:
     build:
       context: ./grillaClient
+      network: host
       args:
         VITE_SEATS: ${SEATS}
         VITE_HASH_BROWSER: ${HASH_BROWSER}
@@ -22,9 +23,14 @@ services:
       - '${CLIENT_PORT}:80'
     depends_on:
       - server
+    profiles:
+      - client
+      - all
 
   server:
-    build: ./grillaServer
+    build:
+      context: ./grillaServer
+      network: host
     expose:
       - '4000'
     environment:
@@ -32,6 +38,9 @@ services:
       - NODE_ENV=production
     depends_on:
       - monguito
+    profiles:
+      - server
+      - all
 
   monguito:
     image: mongo:latest
@@ -40,9 +49,30 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=fawst
     volumes:
       - mongo_data:/data/db
+    profiles:
+      - server
+      - all
 
 volumes:
   mongo_data:
+```
+
+### To start and build all services
+
+```bash
+docker compose --profile all up -d --build
+```
+
+### To start and build only client
+
+```bash
+docker compose --profile client up -d --build
+```
+
+### To start and build only server
+
+```bash
+docker compose --profile server up -d --build
 ```
 
 ## .env
