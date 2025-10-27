@@ -8,8 +8,6 @@ services:
         VITE_HASH_BROWSER: ${HASH_BROWSER}
     ports:
       - '${CLIENT_PORT}:80'
-    depends_on:
-      - server
     profiles:
       - client
       - all
